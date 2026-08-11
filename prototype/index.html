@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh AI — Dark Minimalist Visual Mobile Experience</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            bgDeep: '#070709',
+            surface: '#111117',
+            surfaceElevated: '#171722',
+            borderSubtle: '#222230',
+            borderHighlight: '#2E2E42',
+            textPrimary: '#F4F4F6',
+            textSecondary: '#A0A0B2',
+            textMuted: '#6B6B80',
+            auroraIndigo: '#6366F1',
+            auroraPurple: '#A855F7',
+            auroraRose: '#F43F5E',
+            auroraCyan: '#38BDF8',
+            auroraAmber: '#F59E0B',
+            auroraEmerald: '#10B981',
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            serif: ['"Cormorant Garamond"', 'serif'],
+            mono: ['"Fira Code"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #070709;
+      color: #F4F4F6;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* mymind inspired visual masonry card */
+    .mymind-card {
+      background: #111117;
+      border: 1px solid #222230;
+      border-radius: 16px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+    }
+
+    .mymind-card:hover {
+      border-color: #6366F1;
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px -4px rgba(99, 102, 241, 0.25);
+    }
+
+    /* Ethereal Aurora Glow Overlay */
+    .aurora-glow {
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.15) 0%, rgba(99, 102, 241, 0.1) 50%, transparent 80%);
+    }
+
+    /* Particle Canvas Overlay */
+    #synaptic-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 20;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-auroraIndigo/30 selection:text-white">
+
+  <!-- TOP APP BAR -->
+  <header class="border-b border-borderSubtle bg-bgDeep/90 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-auroraPurple text-white flex items-center justify-center font-bold text-lg shadow-lg shadow-auroraPurple/30">
+        <i class="fa-solid fa-circle-nodes"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-serif font-bold tracking-tight text-textPrimary flex items-center gap-2">
+          MindMesh AI
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-surfaceElevated text-auroraPurple font-mono border border-borderSubtle uppercase">React Native Expo</span>
+        </h1>
+        <p class="text-xs text-textMuted">Dark Minimalism · Capture → Understand → Connect → Build</p>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="flex items-center gap-1 bg-surface p-1.5 rounded-xl border border-borderSubtle text-xs font-medium">
+      <button onclick="switchTab('onboarding')" id="tab-onboarding" class="px-3.5 py-1.5 rounded-lg text-textPrimary bg-surfaceElevated border border-borderSubtle font-semibold transition">
+        <i class="fa-solid fa-bolt mr-1.5 text-auroraAmber"></i>60s Cold Start
+      </button>
+      <button onclick="switchTab('feed')" id="tab-feed" class="px-3.5 py-1.5 rounded-lg text-textMuted hover:text-textPrimary transition">
+        <i class="fa-solid fa-grid-2 mr-1.5 text-auroraIndigo"></i>Memories
+      </button>
+      <button onclick="switchTab('serendipity')" id="tab-serendipity" class="px-3.5 py-1.5 rounded-lg text-textMuted hover:text-textPrimary transition">
+        <i class="fa-solid fa-wand-magic-sparkles mr-1.5 text-auroraPurple"></i>Discovery
+      </button>
+      <button onclick="switchTab('buildplan')" id="tab-buildplan" class="px-3.5 py-1.5 rounded-lg text-textMuted hover:text-textPrimary transition">
+        <i class="fa-solid fa-file-code mr-1.5 text-auroraCyan"></i>Build Spec
+      </button>
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="px-3.5 py-1.5 rounded-lg text-textMuted hover:text-textPrimary transition">
+        <i class="fa-solid fa-chart-pie mr-1.5 text-auroraRose"></i>Momentum
+      </button>
+    </div>
+
+    <!-- REVENUECAT PRO BADGE -->
+    <div class="flex items-center gap-3">
+      <button onclick="triggerPaywall()" class="px-3.5 py-2 bg-auroraAmber text-bgDeep font-semibold rounded-xl text-xs hover:bg-amber-400 transition shadow-md flex items-center gap-1.5">
+        <i class="fa-solid fa-crown text-bgDeep"></i>RevenueCat Paywall
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN VIEWPORT CONTAINER -->
+  <main class="relative flex-1 max-w-7xl w-full mx-auto p-6 md:p-8">
+    <canvas id="synaptic-canvas"></canvas>
+
+    <!-- SECTION 1: 60-SECOND COLD START ONBOARDING -->
+    <section id="view-onboarding" class="space-y-8">
+      <div class="max-w-2xl mx-auto text-center space-y-3">
+        <span class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-auroraPurple/15 text-auroraPurple text-xs font-bold uppercase tracking-wider border border-auroraPurple/30">
+          <i class="fa-solid fa-sparkles"></i> 60-Second Cold-Start Magic
+        </span>
+        <h2 class="text-3xl font-serif font-semibold text-textPrimary leading-tight">
+          Drop 3 thoughts. Watch MindMesh discover what connects them.
+        </h2>
+        <p class="text-sm text-textMuted">
+          Upload 1 screenshot, 1 note, and 1 voice memo to experience instant AI OCR, speech categorization, and serendipitous discovery.
+        </p>
+      </div>
+
+      <!-- 3 DROPZONE CARDS -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="mymind-card p-6 flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="w-9 h-9 rounded-xl bg-amber-500/15 text-auroraAmber flex items-center justify-center text-base font-bold border border-amber-500/30">
+              <i class="fa-solid fa-image"></i>
+            </span>
+            <span class="text-[10px] font-mono text-textMuted bg-surfaceElevated px-2 py-0.5 rounded border border-borderSubtle">Drop #1</span>
+          </div>
+          <div>
+            <h3 class="font-semibold text-textPrimary text-base">1. Screenshot / Image</h3>
+            <p class="text-xs text-textMuted">Pricing page or UI inspiration</p>
+          </div>
+          <div class="border border-borderSubtle bg-surfaceElevated rounded-xl p-3 text-center">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=400&q=80" class="w-full h-28 object-cover rounded-lg mb-2 border border-borderSubtle" alt="Pricing Inspo">
+            <span class="text-[11px] font-medium text-auroraAmber bg-amber-500/10 px-2 py-0.5 rounded inline-block">
+              <i class="fa-solid fa-check mr-1"></i> Classified: Pricing Page
+            </span>
+          </div>
+        </div>
+
+        <div class="mymind-card p-6 flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="w-9 h-9 rounded-xl bg-purple-500/15 text-auroraPurple flex items-center justify-center text-base font-bold border border-purple-500/30">
+              <i class="fa-solid fa-pen-nib"></i>
+            </span>
+            <span class="text-[10px] font-mono text-textMuted bg-surfaceElevated px-2 py-0.5 rounded border border-borderSubtle">Drop #2</span>
+          </div>
+          <div>
+            <h3 class="font-semibold text-textPrimary text-base">2. Quick Thought Note</h3>
+            <p class="text-xs text-textMuted">Feature requirement or note</p>
+          </div>
+          <div class="bg-surfaceElevated border border-borderSubtle rounded-xl p-4 font-sans text-xs text-textSecondary leading-relaxed">
+            "Obsidian dark minimalist theme (#070709) with Cormorant Garamond headers + RevenueCat multipage storytelling paywalls."
+          </div>
+        </div>
+
+        <div class="mymind-card p-6 flex flex-col justify-between space-y-4">
+          <div class="flex items-center justify-between">
+            <span class="w-9 h-9 rounded-xl bg-cyan-500/15 text-auroraCyan flex items-center justify-center text-base font-bold border border-cyan-500/30">
+              <i class="fa-solid fa-microphone"></i>
+            </span>
+            <span class="text-[10px] font-mono text-textMuted bg-surfaceElevated px-2 py-0.5 rounded border border-borderSubtle">Drop #3</span>
+          </div>
+          <div>
+            <h3 class="font-semibold text-textPrimary text-base">3. Voice Memo</h3>
+            <p class="text-xs text-textMuted">Spoken idea or voice clip</p>
+          </div>
+          <div class="bg-cyan-500/10 border border-cyan-500/20 rounded-xl p-4">
+            <div class="flex items-center justify-between text-xs text-auroraCyan font-semibold mb-2">
+              <span>Voice Thought (0:42)</span>
+              <span class="font-mono">94% Match</span>
+            </div>
+            <p class="text-xs text-textSecondary italic">"Convert captured fragments into executable PRDs & RevenueCat paywalls on tap."</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYNAPTIC FUSION CTA -->
+      <div class="text-center">
+        <button onclick="triggerSynapticFusion()" class="px-8 py-3.5 bg-auroraIndigo text-white rounded-xl font-semibold text-sm hover:bg-indigo-600 transition shadow-lg shadow-auroraIndigo/30 inline-flex items-center gap-2">
+          <i class="fa-solid fa-sparkles"></i> Trigger Synaptic Fusion Reveal
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 2: MEMORY FEED (MYMIND MASONRY) -->
+    <section id="view-feed" class="hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-serif font-bold text-textPrimary">Semantic Memory Feed</h2>
+          <p class="text-xs text-textMuted">Dark Minimalist visual cards with automatic vector tags & context spaces</p>
+        </div>
+        <div class="flex items-center gap-2 bg-surface p-1 rounded-xl border border-borderSubtle text-xs">
+          <button class="px-3 py-1.5 rounded-lg bg-auroraIndigo text-white font-semibold">All</button>
+          <button class="px-3 py-1.5 rounded-lg text-textMuted hover:text-textPrimary">#Shipaton</button>
+          <button class="px-3 py-1.5 rounded-lg text-textMuted hover:text-textPrimary">#Pricing</button>
+          <button class="px-3 py-1.5 rounded-lg text-textMuted hover:text-textPrimary">#RevenueCat</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- CARD 1 -->
+        <div class="mymind-card p-5 space-y-3">
+          <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80" class="w-full h-36 object-cover rounded-lg border border-borderSubtle" alt="Pricing Inspo">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="px-2 py-0.5 bg-amber-500/15 text-auroraAmber font-semibold rounded">PRICING</span>
+            <span class="text-textMuted">#Shipaton</span>
+          </div>
+          <h3 class="font-bold text-textPrimary text-sm">RevenueCat Dynamic Paywall Inspo</h3>
+          <p class="text-xs text-textSecondary">Multi-page storytelling paywalls convert 3.4x better than single pricing tables.</p>
+        </div>
+
+        <!-- CARD 2 -->
+        <div class="mymind-card p-5 space-y-3">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="px-2 py-0.5 bg-cyan-500/15 text-auroraCyan font-semibold rounded">VOICE MEMO</span>
+            <span class="text-textMuted">#Shipaton</span>
+          </div>
+          <h3 class="font-bold text-textPrimary text-sm">Voice Note: Synaptic Idea Fusion</h3>
+          <p class="text-xs text-textSecondary italic">"What if local embeddings physically converge connected thoughts into executable PRDs?"</p>
+          <div class="p-3 bg-cyan-500/10 rounded-lg text-xs text-auroraCyan flex items-center justify-between">
+            <span>Audio Waveform (0:42)</span>
+            <i class="fa-solid fa-play"></i>
+          </div>
+        </div>
+
+        <!-- CARD 3 -->
+        <div class="mymind-card p-5 space-y-3">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="px-2 py-0.5 bg-emerald-500/15 text-auroraEmerald font-semibold rounded">CODE</span>
+            <span class="text-textMuted">#RevenueCat</span>
+          </div>
+          <h3 class="font-bold text-textPrimary text-sm">RevenueCat Entitlement Snippet</h3>
+          <pre class="p-3 bg-black/60 rounded-lg text-[11px] font-mono text-emerald-400 overflow-x-auto">import Purchases from 'react-native-purchases';
+const info = await Purchases.getCustomerInfo();</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: SERENDIPITY DISCOVERY -->
+    <section id="view-serendipity" class="hidden space-y-6">
+      <div class="bg-surface p-6 rounded-2xl border border-auroraIndigo/50 space-y-4 aurora-glow">
+        <div class="flex items-center gap-2 text-auroraPurple font-bold text-xs uppercase tracking-wider">
+          <i class="fa-solid fa-sparkles"></i> Serendipity Engine Discovered 1 Connection
+        </div>
+        <h2 class="text-2xl font-serif font-bold text-textPrimary">Dynamic RevenueCat Storytelling Paywall + AI Synaptic Build Plan</h2>
+        <div class="space-y-2 text-xs text-textSecondary">
+          <p class="font-semibold text-textMuted">CONNECTED BECAUSE (EXPLAINABILITY):</p>
+          <p>• Both thoughts focus on converting captured ideas directly into product features.</p>
+          <p>• Screenshot provides pricing strategy, Voice Note provides AI engine architecture.</p>
+        </div>
+        <button onclick="switchTab('buildplan')" class="px-5 py-2.5 bg-auroraIndigo text-white rounded-xl text-xs font-semibold hover:bg-indigo-600 transition flex items-center gap-2">
+          <i class="fa-solid fa-file-code"></i> Generate Executable Build Plan
+        </button>
+      </div>
+    </section>
+
+    <!-- SECTION 4: BUILD PLAN GENERATOR -->
+    <section id="view-buildplan" class="hidden space-y-6">
+      <div class="bg-surface p-6 rounded-2xl border border-borderSubtle space-y-4">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-auroraAmber uppercase tracking-wider">Hero Output Spec</span>
+          <span class="text-xs text-textMuted">3 Memories Synthesized</span>
+        </div>
+        <h2 class="text-2xl font-serif font-bold text-textPrimary">MindMesh AI Mobile App & RevenueCat Strategy</h2>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="p-3 bg-surfaceElevated rounded-xl border border-borderSubtle">
+            <div class="text-xs font-bold text-textPrimary">Tab 1: PRD</div>
+            <div class="text-[11px] text-textMuted">4 Core Features</div>
+          </div>
+          <div class="p-3 bg-surfaceElevated rounded-xl border border-borderSubtle">
+            <div class="text-xs font-bold text-textPrimary">Tab 2: Schema</div>
+            <div class="text-[11px] text-textMuted">Expo + Skia</div>
+          </div>
+          <div class="p-3 bg-surfaceElevated rounded-xl border border-borderSubtle">
+            <div class="text-xs font-bold text-textPrimary">Tab 3: RevenueCat</div>
+            <div class="text-[11px] text-textMuted">3-Page HAMM Flow</div>
+          </div>
+          <div class="p-3 bg-surfaceElevated rounded-xl border border-borderSubtle">
+            <div class="text-xs font-bold text-textPrimary">Tab 4: Tasks</div>
+            <div class="text-[11px] text-textMuted">5 Milestones</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: DASHBOARD -->
+    <section id="view-dashboard" class="hidden space-y-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-surface p-5 rounded-2xl border border-borderSubtle text-center">
+          <div class="text-3xl font-bold text-textPrimary">17</div>
+          <div class="text-xs text-textMuted mt-1">Total Captures</div>
+        </div>
+        <div class="bg-surface p-5 rounded-2xl border border-borderSubtle text-center">
+          <div class="text-3xl font-bold text-auroraPurple">4</div>
+          <div class="text-xs text-textMuted mt-1">Discoveries</div>
+        </div>
+        <div class="bg-surface p-5 rounded-2xl border border-borderSubtle text-center">
+          <div class="text-3xl font-bold text-auroraAmber">2</div>
+          <div class="text-xs text-textMuted mt-1">Build Plans</div>
+        </div>
+        <div class="bg-surface p-5 rounded-2xl border border-borderSubtle text-center">
+          <div class="text-3xl font-bold text-auroraEmerald">1</div>
+          <div class="text-xs text-textMuted mt-1">Shipped Project</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function switchTab(tabId) {
+      const views = ['onboarding', 'feed', 'serendipity', 'buildplan', 'dashboard'];
+      views.forEach(v => {
+        document.getElementById('view-' + v).classList.add('hidden');
+        document.getElementById('tab-' + v).classList.remove('bg-surfaceElevated', 'text-textPrimary', 'font-semibold');
+        document.getElementById('tab-' + v).classList.add('text-textMuted');
+      });
+      document.getElementById('view-' + tabId).classList.remove('hidden');
+      document.getElementById('tab-' + tabId).classList.add('bg-surfaceElevated', 'text-textPrimary', 'font-semibold');
+    }
+
+    function triggerPaywall() {
+      alert("RevenueCat Multipage Storytelling Paywall triggered! (HAMM Award preview active)");
+    }
+
+    // Canvas Synaptic Node Particle Engine
+    const canvas = document.getElementById('synaptic-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight || window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    for (let i = 0; i < 25; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: (Math.random() - 0.5) * 0.8,
+        radius: Math.random() * 2 + 1,
+        color: ['#6366F1', '#A855F7', '#38BDF8'][Math.floor(Math.random() * 3)]
+      });
+    }
+
+    function drawParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < particles.length; i++) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          let p2 = particles[j];
+          let dist = Math.hypot(p.x - p2.x, p.y - p2.y);
+          if (dist < 130) {
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = `rgba(168, 85, 247, ${0.2 * (1 - dist / 130)})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        }
+      }
+      requestAnimationFrame(drawParticles);
+    }
+    drawParticles();
+
+    function triggerSynapticFusion() {
+      // Particle burst effect
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          x: canvas.width / 2,
+          y: canvas.height / 3,
+          vx: (Math.random() - 0.5) * 5,
+          vy: (Math.random() - 0.5) * 5,
+          radius: Math.random() * 3 + 2,
+          color: '#6366F1'
+        });
+      }
+      setTimeout(() => {
+        particles = particles.slice(0, 25);
+        switchTab('serendipity');
+      }, 1200);
+    }
+  </script>
+</body>
+</html>
