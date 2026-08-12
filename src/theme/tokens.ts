@@ -1,14 +1,14 @@
 // Premium Editorial Theme Tokens — High Taste Frontend System
 export const theme = {
   colors: {
-    bg: '#FAFAF9',           // Warm Warm White Canvas
+    bg: '#F7F7F8',           // (changed) Warm Warm White Canvas
     bgSecondary: '#F5F5F4',  // Subtle Warm Grey
     surface: '#FFFFFF',      // Pure White Surface
     surfaceSubtle: '#F2F2F0',
     card: '#FFFFFF',
     cardHover: '#F7F7F6',
     border: 'rgba(15, 23, 42, 0.06)',
-    borderLight: 'rgba(15, 23, 42, 0.04)',
+    // borderLight: 'rgba(15, 23, 42, 0.04)',
     
     // Luxury Typography Hierarchy & Tracking
     textPrimary: '#0F172A',   // Deep Obsidian Blue

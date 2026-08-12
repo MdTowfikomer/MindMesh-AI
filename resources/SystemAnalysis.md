@@ -73,13 +73,13 @@ flowchart TD
   - **Vector Generation (`generateEmbedding()`):** Performs on-device feature-hashing tokenization and character 3-gram extraction, normalizing L2-norm magnitude to produce a dense **384-dimensional unit vector** natively in React Native without external server calls or native ONNX dependencies.
   - **Vector Distance Comparison (`calculateCosineSimilarity()`):** Computes exact cosine similarity between two 384-dim vectors in sub-5ms execution time.
 
-### 3.3 Serendipity Discovery & Explainability Engine
-- **File Reference:** [`src/services/ai.ts`](file:///D:/Programming/CascadeProjects/RevenueCat/src/services/ai.ts)
+### 3.3 Serendipity Discovery & Explainability Engine (v6.1 UI/UX Architecture)
+- **File Reference:** [`src/services/ai.ts`](file:///D:/Programming/CascadeProjects/RevenueCat/src/services/ai.ts) & [`src/components/ConnectionCard.tsx`](file:///D:/Programming/CascadeProjects/RevenueCat/src/components/ConnectionCard.tsx)
 - **Primary Method:** `AIService.discoverConnections(memories: MemoryItem[]): Promise<SerendipityConnection[]>`
 - **Core Functionality:**
   - Performs pairwise vector calculations using **Dynamic Adaptive Similarity Thresholding (`0.78` – `0.88`)** based on memory cluster density.
-  - Synthesizes **Actionable Founder Guidance** (Paragraph 1: Pattern Discovered; Paragraph 2: What To Do Next).
-  - Generates **3 Concrete Next Steps** (`nextActions`).
+  - **Progressive Disclosure Accordion:** Shows clean **Pattern Discovered** summary and 3 checkable next steps by default, with an inline *"🔍 Deep Dive into Technical Proof & Evidence"* toggle button for deep technical details.
+  - **Live Progress Ring & Checkable Steps:** Interactive step checkboxes (`toggleNextAction()`) with live `1/3 STEPS` counter and `✓ READY TO SHIP` completion status.
   - Generates **Explainability ("Why")** rationale points and **Verified Evidence ("Proof")** citation quotes.
 
 ### 3.4 Dark Portal Synaptic Fusion Reveal

@@ -44,14 +44,6 @@ export const BuildPlanTabs: React.FC<BuildPlanTabsProps> = ({ plan, visible, onC
 
         <Text style={styles.subtitle}>{plan.subtitle}</Text>
 
-        {/* Hallmark Slop-Test Gate Badge */}
-        <View style={styles.slopGateBadge}>
-          <ShieldCheck size={12} color={theme.colors.auroraEmerald} />
-          <Text style={styles.slopGateText}>
-            HALLMARK GATE: {plan.slopGateScore ?? 100}% CLEAN • 0 SLOP WORDS DETECTED
-          </Text>
-        </View>
-
         {/* 4 Navigation Tabs */}
         <View style={styles.tabsRow}>
           <TouchableOpacity

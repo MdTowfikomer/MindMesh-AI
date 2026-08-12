@@ -142,3 +142,55 @@ export const Folder: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }
 export const ChevronDown: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
   <Feather name="chevron-down" size={size} color={color} style={style} />
 );
+
+export const RotateCcw: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="rotate-ccw" size={size} color={color} style={style} />
+);
+
+export const Globe: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="globe" size={size} color={color} style={style} />
+);
+
+export const Highlighting: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <MaterialCommunityIcons name="format-quote-close" size={size} color={color} style={style} />
+);
+
+export const Bookmark: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="bookmark" size={size} color={color} style={style} />
+);
+
+export const Tag: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="tag" size={size} color={color} style={style} />
+);
+
+export const Quote: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <FontAwesome5 name="quote-left" size={size} color={color} style={style} />
+);
+
+export const Video: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="video" size={size} color={color} style={style} />
+);
+
+export const Play: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Ionicons name="play" size={size} color={color} style={style} />
+);
+
+export const BookOpen: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="book-open" size={size} color={color} style={style} />
+);
+
+export const Download: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="download" size={size} color={color} style={style} />
+);
+
+export const RefreshCw: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="refresh-cw" size={size} color={color} style={style} />
+);
+
+export const AlertCircle: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="alert-circle" size={size} color={color} style={style} />
+);
+
+export const Image: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="image" size={size} color={color} style={style} />
+);

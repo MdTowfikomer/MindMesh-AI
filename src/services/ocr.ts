@@ -19,26 +19,34 @@ const STOP_WORDS = new Set([
 
 export class OCRService {
   /**
-   * Fully Dynamic On-Device NLP & OCR Extraction Engine
-   * Parses arbitrary OCR text & asset paths dynamically using tokenization, entity recognition, and frequency scoring.
+   * Analyzes an image for classification and tagging.
+   * If no real OCR text is available, returns a clean minimal result
+   * (like mymind — show the image, auto-organize silently).
    */
   public static async analyzeImage(uri: string, rawOcrInput?: string): Promise<OCRAnalysisResult> {
-    // Combine input text from OCR scan, image URI, or hint
-    const sourceText = rawOcrInput && rawOcrInput.length > 5
-      ? rawOcrInput
-      : this.extractTextFromUriPath(uri);
+    // If we have actual OCR text (from a real OCR API), process it
+    if (rawOcrInput && rawOcrInput.trim().length > 10) {
+      return this.processWithText(rawOcrInput, uri);
+    }
 
-    // 1. Dynamic Tokenization & Proper Noun Entity Extraction
+    // Check if URI contains meaningful context clues
+    const contextFromUri = this.extractContextFromUri(uri);
+    if (contextFromUri) {
+      return this.processWithText(contextFromUri, uri);
+    }
+
+    // No OCR available — return clean minimal result (like mymind)
+    return this.createCleanImageResult();
+  }
+
+  /**
+   * Process image when we have meaningful text to work with
+   */
+  private static processWithText(sourceText: string, uri: string): OCRAnalysisResult {
     const tokens = this.tokenize(sourceText);
     const entities = this.extractEntities(sourceText);
-
-    // 2. Dynamic Classification based on semantic topic weights
     const classification = this.determineClassification(sourceText, tokens);
-
-    // 3. Dynamic Tag Generation from extracted entities & high-frequency keywords
     const suggestedTags = this.generateDynamicTags(sourceText, tokens, entities, classification);
-
-    // 4. Dynamic TLDR Synthesis from text structure
     const tldrTitle = this.synthesizeTLDR(sourceText, entities, classification);
 
     return {
@@ -51,8 +59,87 @@ export class OCRService {
   }
 
   /**
-   * Tokenizes raw text into clean words excluding English stop words
+   * Returns a clean minimal result for user-uploaded images without OCR.
+   * Mimics mymind behavior: save the image, show it beautifully, minimal metadata.
    */
+  private static createCleanImageResult(): OCRAnalysisResult {
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
+
+    return {
+      tldrTitle: `Saved ${dateStr} at ${timeStr}`,
+      ocrText: '',
+      classification: 'image',
+      suggestedTags: ['Image'],
+      confidenceScore: 0.90,
+    };
+  }
+
+  /**
+   * Tries to extract meaningful context from the URI path.
+   * Returns null if the URI is just a UUID or hash (no useful info).
+   */
+  private static extractContextFromUri(uri: string): string | null {
+    if (!uri) return null;
+    const lower = uri.toLowerCase();
+
+    // Known context patterns
+    if (lower.includes('linkedin')) {
+      return 'A LinkedIn post with professional content and networking insights.';
+    }
+    if (lower.includes('twitter') || lower.includes('x.com')) {
+      return 'A tweet or X post with social media content.';
+    }
+    if (lower.includes('pricing') || lower.includes('paywall') || lower.includes('revenuecat')) {
+      return 'RevenueCat pricing or paywall strategy screenshot.';
+    }
+    if (lower.includes('figma') || lower.includes('design')) {
+      return 'A design file or UI mockup screenshot.';
+    }
+    if (lower.includes('github') || lower.includes('code')) {
+      return 'A code snippet or GitHub repository screenshot.';
+    }
+
+    // Extract filename and check if it's meaningful (not a UUID/hash)
+    const filename = uri.split('/').pop()?.split('?')[0] || '';
+    const nameWithoutExt = filename.replace(/\.(jpg|jpeg|png|webp|gif|heic|bmp)$/i, '');
+
+    // Detect UUID/hash filenames — these have no useful info
+    if (this.isUuidOrHash(nameWithoutExt)) {
+      return null;
+    }
+
+    // If filename has readable words (not just numbers/hashes), use it
+    const cleaned = nameWithoutExt
+      .replace(/[-_]/g, ' ')
+      .replace(/\d{10,}/g, '') // remove long number sequences (timestamps)
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (cleaned.length >= 8 && /[a-zA-Z]{3,}/.test(cleaned)) {
+      return cleaned;
+    }
+
+    return null;
+  }
+
+  /**
+   * Detects if a string is a UUID, hash, or random ID (not human-readable)
+   */
+  private static isUuidOrHash(str: string): boolean {
+    if (!str) return true;
+    // UUID pattern
+    if (/^[0-9a-f]{8}[-]?[0-9a-f]{4}[-]?[0-9a-f]{4}[-]?[0-9a-f]{4}[-]?[0-9a-f]{12}$/i.test(str)) return true;
+    // Hex hash (16+ chars of just hex)
+    if (/^[0-9a-f]{16,}$/i.test(str)) return true;
+    // Mostly numbers and hex chars with dashes
+    if (/^[0-9a-f\-]{20,}$/i.test(str)) return true;
+    // IMG_ or photo_ with just numbers
+    if (/^(img|image|photo|pic|screenshot)[-_]?\d+$/i.test(str)) return true;
+    return false;
+  }
+
   private static tokenize(text: string): string[] {
     if (!text) return [];
     return text
@@ -62,19 +149,13 @@ export class OCRService {
       .filter(w => w.length > 2 && !STOP_WORDS.has(w));
   }
 
-  /**
-   * Extracts proper nouns and capitalized entities (e.g. LinkedIn, GitHub, GSoC, RevenueCat)
-   */
   private static extractEntities(text: string): string[] {
     if (!text) return [];
     const matches = text.match(/\b[A-Z][a-zA-Z0-9_-]{2,}\b/g) || [];
     const unique = Array.from(new Set(matches));
-    return unique.filter(e => !['The', 'And', 'For', 'With', 'From', 'This', 'That', 'Your'].includes(e));
+    return unique.filter(e => !['The', 'And', 'For', 'With', 'From', 'This', 'That', 'Your', 'Image', 'Saved'].includes(e));
   }
 
-  /**
-   * Dynamically infers MemoryType category based on text semantics
-   */
   private static determineClassification(text: string, tokens: string[]): MemoryType {
     const lower = text.toLowerCase();
 
@@ -90,41 +171,41 @@ export class OCRService {
     return 'image';
   }
 
-  /**
-   * Dynamically synthesizes a clean 1-sentence TLDR summary from text structure
-   */
   private static synthesizeTLDR(text: string, entities: string[], type: MemoryType): string {
     const cleanText = text.replace(/\s+/g, ' ').trim();
 
     // If first sentence is clean and descriptive, use it
     const firstSentence = cleanText.split(/[.!?\n]/)[0]?.trim();
-    if (firstSentence && firstSentence.length >= 15 && firstSentence.length <= 110) {
+    if (firstSentence && firstSentence.length >= 10 && firstSentence.length <= 110) {
       return firstSentence.charAt(0).toUpperCase() + firstSentence.slice(1);
     }
 
-    // Synthesize structured TLDR from entities
-    const platform = entities.find(e => ['LinkedIn', 'Twitter', 'GitHub', 'RevenueCat', 'Stripe', 'Figma'].includes(e)) || 'Captured';
-    const mainTopic = entities.filter(e => e !== platform).slice(0, 3).join(', ') || 'research notes';
+    // Synthesize from entities
+    const platform = entities.find(e => ['LinkedIn', 'Twitter', 'GitHub', 'RevenueCat', 'Stripe', 'Figma'].includes(e));
+    const topics = entities.filter(e => e !== platform).slice(0, 3).join(', ');
 
-    if (platform === 'LinkedIn') {
-      return `A LinkedIn post detailing ${mainTopic || 'engineering programs & opportunities'}.`;
+    if (platform && topics) {
+      return `${platform} — ${topics}`;
     }
-    if (platform === 'RevenueCat') {
-      return `RevenueCat paywall strategy detailing ${mainTopic || 'subscription monetization'}.`;
+    if (platform) {
+      return `${platform} screenshot`;
+    }
+    if (topics) {
+      return topics;
     }
 
-    return `${platform} screenshot covering ${mainTopic}.`;
+    // Fallback
+    const now = new Date();
+    const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    return `Saved ${dateStr}`;
   }
 
-  /**
-   * Generates dynamic tags from text entities and frequency tokens
-   */
   private static generateDynamicTags(text: string, tokens: string[], entities: string[], type: MemoryType): string[] {
     const tagSet = new Set<string>();
 
-    // Add extracted proper noun entities as primary tags
+    // Add proper noun entities
     entities.forEach(e => {
-      if (e.length <= 20) tagSet.add(e);
+      if (e.length >= 3 && e.length <= 20) tagSet.add(e);
     });
 
     // Semantic category tags
@@ -132,40 +213,25 @@ export class OCRService {
     if (type === 'code') tagSet.add('Code');
     if (type === 'whiteboard') tagSet.add('Architecture');
 
-    // Frequency tokens
+    // Top frequency tokens (only if they're real words)
     const counts: Record<string, number> = {};
-    tokens.forEach(t => {
-      counts[t] = (counts[t] || 0) + 1;
-    });
+    tokens.forEach(t => { counts[t] = (counts[t] || 0) + 1; });
 
-    const sortedTokens = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-    sortedTokens.slice(0, 5).forEach(t => {
-      const capitalized = t.charAt(0).toUpperCase() + t.slice(1);
-      if (capitalized.length > 2) tagSet.add(capitalized);
-    });
+    Object.keys(counts)
+      .sort((a, b) => counts[b] - counts[a])
+      .slice(0, 4)
+      .forEach(t => {
+        const capitalized = t.charAt(0).toUpperCase() + t.slice(1);
+        if (capitalized.length >= 3 && /^[a-zA-Z]+$/.test(capitalized)) {
+          tagSet.add(capitalized);
+        }
+      });
 
-    // Ensure Screenshot default tag
-    tagSet.add('Screenshot');
-
-    return Array.from(tagSet).slice(0, 8);
-  }
-
-  /**
-   * Converts URI/file path names into readable source text when raw OCR is pending
-   */
-  private static extractTextFromUriPath(uri: string): string {
-    if (!uri) return 'Captured Image Screenshot';
-    const lower = uri.toLowerCase();
-
-    if (lower.includes('whatsapp') || lower.includes('linkedin') || lower.includes('23.22.59')) {
-      return 'A LinkedIn post listing top 10 open source programs for engineering students in 2026. Features GSoC, GitHub Externship, LFX Mentorship, Linux Foundation, MLH Fellowship, and Outreachy.';
-    }
-    if (lower.includes('pricing') || lower.includes('paywall') || lower.includes('revenuecat')) {
-      return 'RevenueCat Multipage Storytelling Paywall Spec with 3-Page Flow and 7-Day Free Trial Offered ($9.99/mo).';
+    // Only add 'Image' tag if nothing else was generated
+    if (tagSet.size === 0) {
+      tagSet.add('Image');
     }
 
-    // Clean up filename into plain text words
-    const filename = uri.split('/').pop()?.split('?')[0] || '';
-    return filename.replace(/[-_.]/g, ' ').replace(/\b(jpg|jpeg|png|webp|assets)\b/gi, '').trim() || 'Captured Research Screenshot';
+    return Array.from(tagSet).slice(0, 6);
   }
 }

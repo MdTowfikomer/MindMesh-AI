@@ -2,6 +2,81 @@ import { MemoryItem, SerendipityConnection, BuildPlan } from '../types/mindmesh'
 
 export const seedMemories: MemoryItem[] = [
   {
+    id: 'mem-article-1',
+    type: 'article',
+    title: 'Why Great Products Feel Effortless: The Hidden UX Mechanics',
+    content: 'An in-depth breakdown of how subtle animations, micro-feedback, and local-first latency zeroing create products users fall in love with instantly.',
+    tags: ['UX', 'ProductDesign', 'Article', 'MobileApp'],
+    invisibleTags: ['interaction design', 'microanimations', 'user psychology', 'retention', 'delight'],
+    dominantColors: [
+      { name: 'blue', hex: '#3B82F6' },
+      { name: 'indigo', hex: '#6366F1' }
+    ],
+    urlMetadata: {
+      url: 'https://medium.com/design/effortless-product-ux',
+      domain: 'medium.com',
+      author: 'Elena Rostova',
+      siteName: 'UX Collective',
+      readTime: '6 min read',
+      highlights: [
+        'Speed is an emotional feature. When an app responds in under 50ms, it feels like an extension of thought.',
+        'Great micro-animations serve a function: guiding the eye to where action occurred.'
+      ],
+      fullText: `Why Great Products Feel Effortless: The Hidden UX Mechanics
+
+Speed is an emotional feature. When an app responds in under 50ms, it feels like an extension of thought. Most digital tools suffer from latency lag—making users hesitate before taking action.
+
+The secret to modern minimalist interfaces lies in local-first optimistic updates coupled with subtle physics feedback. When a user taps 'Save', the item should visually persist immediately before the network handshake occurs.
+
+Key Principles:
+1. Zero Latency Optimistic State Updates
+2. Tactile Physics Feedback (Haptics + Spring Animations)
+3. Invisible Categorization — don't force users to organize upfront.`
+    },
+    contextSpace: 'MobileUX',
+    createdAt: '2026-08-11T14:10:00Z',
+    confidenceScore: 0.99,
+    aspectRatio: 1.15,
+  },
+  {
+    id: 'mem-quote-1',
+    type: 'quote',
+    title: 'Paul Graham on Hardware & Software Simplicity',
+    content: '“Simple things should be simple, complex things should be possible. The rarest quality in software is discipline.”',
+    tags: ['Quote', 'Philosophy', 'Startup', 'PaulGraham'],
+    invisibleTags: ['ycombinator', 'simplicity', 'design principles', 'discipline'],
+    urlMetadata: {
+      url: 'https://paulgraham.com/simplicity.html',
+      domain: 'paulgraham.com',
+      author: 'Paul Graham',
+      siteName: 'Paul Graham Essays'
+    },
+    contextSpace: 'Idea',
+    createdAt: '2026-08-10T09:30:00Z',
+    confidenceScore: 0.97,
+    aspectRatio: 0.85,
+  },
+  {
+    id: 'mem-video-1',
+    type: 'video',
+    title: 'Product Demo: Skia 60FPS Physics Particles',
+    content: 'Interactive particle node physics rendering in React Native Skia. Connecting 50+ nodes in real-time with zero frame drops.',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+    mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    audioDuration: '0:18',
+    fileSize: '4.2 MB',
+    tags: ['Video', 'Demo', 'Skia', 'Physics'],
+    invisibleTags: ['particle system', 'react native skia', 'motion graphics', 'gpu rendering'],
+    dominantColors: [
+      { name: 'purple', hex: '#8B5CF6' },
+      { name: 'warm tone', hex: '#D946EF' }
+    ],
+    contextSpace: 'Shipaton',
+    createdAt: '2026-08-08T17:40:00Z',
+    confidenceScore: 0.95,
+    aspectRatio: 1.35,
+  },
+  {
     id: 'mem-linkedin',
     type: 'image',
     title: 'A LinkedIn post listing 10 open source programs for engineering students in 2026.',
@@ -9,6 +84,11 @@ export const seedMemories: MemoryItem[] = [
     imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
     ocrText: 'A LinkedIn post listing top 10 open source programs for engineering students in 2026.',
     tags: ['Screenshot', 'tech', 'student opportunity', 'GitHub', 'career', 'programming', 'internship', 'GSoC', 'engineering'],
+    invisibleTags: ['open source', 'mentorship', 'career growth', 'software developer'],
+    dominantColors: [
+      { name: 'blue', hex: '#3B82F6' },
+      { name: 'ocean', hex: '#1E40AF' }
+    ],
     contextSpace: 'Shipaton',
     createdAt: '2026-08-11T12:00:00Z',
     confidenceScore: 0.98,
@@ -22,6 +102,11 @@ export const seedMemories: MemoryItem[] = [
     imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
     ocrText: 'REVENUECAT PAYWALL ANALYTICS: 3-Page Storytelling Flow + Swipe Exit Discount (50% OFF)',
     tags: ['Pricing', 'RevenueCat', 'Conversion', 'MobileUX'],
+    invisibleTags: ['subscription revenue', 'freemium conversion', 'in-app purchases'],
+    dominantColors: [
+      { name: 'red', hex: '#EF4444' },
+      { name: 'warm tone', hex: '#F97316' }
+    ],
     contextSpace: 'Pricing',
     createdAt: '2026-07-15T14:30:00Z',
     confidenceScore: 0.96,
@@ -35,21 +120,11 @@ export const seedMemories: MemoryItem[] = [
     audioDuration: '0:42',
     audioWaveform: [20, 45, 80, 60, 95, 30, 75, 90, 40, 60, 85, 100, 50, 30, 70, 85, 40],
     tags: ['Idea', 'VoiceMemo', 'AI', 'SynapticFusion', 'BuildPlan'],
+    invisibleTags: ['vector similarity', 'on-device ai', 'autonomous synthesis'],
     contextSpace: 'Idea',
     createdAt: '2026-08-11T10:15:00Z',
     confidenceScore: 0.94,
     aspectRatio: 0.9,
-  },
-  {
-    id: 'mem-3',
-    type: 'text',
-    title: 'White Minimalist & Luxury Editorial UI',
-    content: 'Combine Cormorant Garamond serif headers with Plus Jakarta Sans body. Clean white background (#FFFFFF) with subtle radial gradients in indigo & purple.',
-    tags: ['Minimalism', 'Design', 'Typography', 'SwissMinimalism', 'Editorial'],
-    contextSpace: 'MobileUX',
-    createdAt: '2026-08-09T18:20:00Z',
-    confidenceScore: 0.89,
-    aspectRatio: 1.1,
   },
   {
     id: 'mem-4',
@@ -59,26 +134,15 @@ export const seedMemories: MemoryItem[] = [
     imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
     ocrText: 'SYNAPTIC PARTICLES: Physics-driven node graph with spring tension',
     tags: ['UI', 'Skia', 'Particles', 'Serendipity'],
+    invisibleTags: ['canvas rendering', 'react native animation', 'graph physics'],
+    dominantColors: [
+      { name: 'purple', hex: '#8B5CF6' },
+      { name: 'violet', hex: '#A855F7' }
+    ],
     contextSpace: 'Shipaton',
     createdAt: '2026-08-04T09:00:00Z',
     confidenceScore: 0.91,
     aspectRatio: 1.4,
-  },
-  {
-    id: 'mem-5',
-    type: 'code',
-    title: 'RevenueCat Entitlement Check Snippet',
-    content: `import Purchases from 'react-native-purchases';
-
-const checkProAccess = async () => {
-  const customerInfo = await Purchases.getCustomerInfo();
-  return customerInfo.entitlements.active['Pro Access'] !== undefined;
-};`,
-    tags: ['Code', 'RevenueCat', 'SDK', 'MobileSDK'],
-    contextSpace: 'RevenueCat',
-    createdAt: '2026-08-02T16:45:00Z',
-    confidenceScore: 0.98,
-    aspectRatio: 1.2,
   },
   {
     id: 'mem-6',
@@ -88,6 +152,11 @@ const checkProAccess = async () => {
     imageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80',
     ocrText: 'EXPLAINABILITY PROOF: [ Screenshot Aug 1 ] + [ Voice Note July 14 ]',
     tags: ['Architecture', 'Serendipity', 'Explainability'],
+    invisibleTags: ['transparent ai', 'proof snippet', 'cosine distance'],
+    dominantColors: [
+      { name: 'charcoal', hex: '#1F2937' },
+      { name: 'monochrome', hex: '#4B5563' }
+    ],
     contextSpace: 'Shipaton',
     createdAt: '2026-07-28T11:20:00Z',
     confidenceScore: 0.88,

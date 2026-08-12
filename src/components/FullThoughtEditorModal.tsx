@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme/tokens';
 import { ChevronDown, CheckSquare, PenTool } from './Icons';
 import { useMemoryStore } from '../stores/memoryStore';
+import { URLEnrichmentService } from '../services/urlEnrichment';
 
 interface FullThoughtEditorModalProps {
   visible: boolean;
@@ -22,16 +24,8 @@ export const FullThoughtEditorModal: React.FC<FullThoughtEditorModalProps> = ({ 
   const handleSave = () => {
     if (!text.trim()) return;
 
-    const firstLine = text.trim().split('\n')[0];
-    const title = firstLine.length > 35 ? firstLine.substring(0, 35) + '...' : firstLine;
-
-    addMemory({
-      type: 'text',
-      title: title || 'Thought Note',
-      content: text.trim(),
-      tags: ['MindNote', 'Thought'],
-      contextSpace: 'Shipaton',
-    });
+    const enriched = URLEnrichmentService.enrichInput(text.trim());
+    addMemory(enriched);
 
     setText('');
     onClose();

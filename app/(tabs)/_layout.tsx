@@ -1,8 +1,8 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { theme } from '../../src/theme/tokens';
-import { LayoutGrid, Sparkles, FileCode, PieChart, Crown } from '../../src/components/Icons';
+import { LayoutGrid, Sparkles, Folder, Crown, RotateCcw } from '../../src/components/Icons';
 import { useMemoryStore } from '../../src/stores/memoryStore';
 
 export default function TabLayout() {
@@ -34,8 +34,8 @@ export default function TabLayout() {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
           borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          height: 70,
+          paddingBottom: 14,
           paddingTop: 6,
         },
         tabBarActiveTintColor: theme.colors.auroraIndigo,
@@ -58,27 +58,29 @@ export default function TabLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: 'Serendipity Engine',
+          title: 'Connection Engine',
           tabBarLabel: 'Discovery',
           tabBarIcon: ({ color, size }) => <Sparkles size={size - 2} color={color} />,
         }}
       />
 
       <Tabs.Screen
-        name="build-plan"
+        name="serendipity"
         options={{
-          title: 'Build Plan',
-          tabBarLabel: 'Build Spec',
-          tabBarIcon: ({ color, size }) => <FileCode size={size - 2} color={color} />,
+          title: 'Serendipity',
+          tabBarLabel: 'Serendipity',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <RotateCcw size={size - 2} color={color} />,
         }}
       />
 
       <Tabs.Screen
-        name="dashboard"
+        name="spaces"
         options={{
-          title: 'Momentum',
-          tabBarLabel: 'Dashboard',
-          tabBarIcon: ({ color, size }) => <PieChart size={size - 2} color={color} />,
+          title: 'Spaces',
+          tabBarLabel: 'Spaces',
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => <Folder size={size - 2} color={color} />,
         }}
       />
     </Tabs>
