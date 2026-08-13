@@ -184,20 +184,27 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
 
-  // Base card — borderless clean editorial style
+  // Base card — crisp elevated white card with subtle border & shadow
   card: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow: 'hidden',
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    borderWidth: 1,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
 
   // Caption below card — grey, left-aligned
   captionBelow: {
-    fontFamily: theme.fonts.sans,
+    fontFamily: theme.fonts.sansMedium,
     fontSize: 11,
-    color: theme.colors.textMuted,
-    marginTop: 5,
-    marginBottom: 6,
+    color: theme.colors.textPrimary,
+    marginTop: 6,
+    marginBottom: 8,
     paddingHorizontal: 2,
     lineHeight: 15,
   },
@@ -280,13 +287,15 @@ const styles = StyleSheet.create({
     color: theme.colors.textDim,
   },
 
-  // Quote card — purple accent, clean
+  // Quote card — vibrant royal violet tint with left accent border
   quoteCard: {
-    backgroundColor: '#F5F3F8',
-    paddingVertical: 18,
+    backgroundColor: '#F5F3FF',
+    paddingVertical: 20,
     paddingHorizontal: 16,
     alignItems: 'center',
     gap: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#7C3AED',
   },
   quoteBody: {
     fontFamily: theme.fonts.serif,
@@ -297,9 +306,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   quoteAuthor: {
-    fontFamily: theme.fonts.sansMedium,
+    fontFamily: theme.fonts.sansBold,
     fontSize: 10,
-    color: theme.colors.auroraPurple,
+    color: '#7C3AED',
     marginTop: 2,
   },
   quoteSource: {
@@ -308,15 +317,17 @@ const styles = StyleSheet.create({
     color: theme.colors.textDim,
   },
 
-  // PDF card
+  // PDF card — vibrant emerald green tint
   pdfCard: {
-    backgroundColor: '#F5F5F3',
+    backgroundColor: '#F0FDF4',
     padding: 16,
     alignItems: 'center',
     gap: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: '#10B981',
   },
   pdfTitle: {
-    fontFamily: theme.fonts.sansMedium,
+    fontFamily: theme.fonts.sansBold,
     fontSize: 11,
     color: theme.colors.textPrimary,
     textAlign: 'center',
@@ -327,11 +338,13 @@ const styles = StyleSheet.create({
     gap: 4,
   },
 
-  // Voice card
+  // Voice card — vibrant oceanic blue tint
   voiceCard: {
-    backgroundColor: '#F5F5F3',
+    backgroundColor: '#F0F9FF',
     padding: 14,
     gap: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: '#0284C7',
   },
   waveformRow: {
     flexDirection: 'row',
@@ -341,7 +354,7 @@ const styles = StyleSheet.create({
   },
   waveBar: {
     flex: 1,
-    backgroundColor: theme.colors.auroraCyan,
+    backgroundColor: '#0284C7',
     borderRadius: 1,
     maxWidth: 4,
   },
@@ -351,10 +364,12 @@ const styles = StyleSheet.create({
     color: theme.colors.textMuted,
   },
 
-  // Text/note card
+  // Text/note card — crisp warm off-white card with indigo left accent
   textCard: {
-    backgroundColor: '#F5F5F3',
+    backgroundColor: '#FAFAFA',
     padding: 14,
+    borderLeftWidth: 3,
+    borderLeftColor: '#6366F1',
   },
   textContent: {
     fontFamily: theme.fonts.sans,

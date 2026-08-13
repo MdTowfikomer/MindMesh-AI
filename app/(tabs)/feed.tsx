@@ -1,9 +1,8 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { useMemoryStore } from '../../src/stores/memoryStore';
 import { MemoryCard } from '../../src/components/MemoryCard';
 import { CaptureBar } from '../../src/components/CaptureBar';
-import { SynapticFusion } from '../../src/components/SynapticFusion';
 import { AutoStacksDrawer } from '../../src/components/AutoStacksDrawer';
 import { TrashModal } from '../../src/components/TrashModal';
 import { ArticleReaderModal } from '../../src/components/ArticleReaderModal';
@@ -11,11 +10,16 @@ import { PdfViewerModal } from '../../src/components/PdfViewerModal';
 import { InboundShareSimulatorModal } from '../../src/components/InboundShareSimulatorModal';
 import { AdvancedSearchService } from '../../src/services/advancedSearch';
 import { URLEnrichmentService } from '../../src/services/urlEnrichment';
+import { VisionAIService } from '../../src/services/visionAI';
+import { ShareIntentService } from '../../src/services/shareIntent';
 import { MemoryDetailModal } from '../../src/components/MemoryDetailModal';
+import { SavingSkeletonCard } from '../../src/components/SavingSkeletonCard';
 import { theme } from '../../src/theme/tokens';
-import { Search, Sparkles, X } from '../../src/components/Icons';
+import { Search, Sparkles, X, CheckCircle2 } from '../../src/components/Icons';
 
 export default function FeedScreen() {
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   const {
     memories,
     trash,
@@ -40,10 +44,64 @@ export default function FeedScreen() {
     saveArticleHighlight,
     createSmartSpace,
     deleteSmartSpace,
-    isSynapticFusing,
     openMemoryDetail,
     addMemory,
+    isSaving,
+    setIsSaving,
   } = useMemoryStore();
+
+  // Listen for native Android inbound share intents from external apps (Instagram, LinkedIn, Twitter/X, Gallery)
+  useEffect(() => {
+    const handleSharedContent = async (data: string, type: 'text' | 'image') => {
+      setIsSaving(true);
+      try {
+        if (type === 'image') {
+          // Copy content:// to cache for readability, then analyze with Gemini Vision
+          const cachedUri = await ShareIntentService.copyToCache(data);
+          const visionResult = await VisionAIService.analyzeImage(cachedUri);
+          addMemory({
+            type: visionResult.classification || 'image',
+            title: visionResult.title,
+            content: visionResult.tldr || 'Shared image',
+            imageUrl: cachedUri,
+            ocrText: visionResult.ocrText,
+            tags: visionResult.tags,
+            contextSpace: visionResult.tags[0] || 'Gallery',
+            confidenceScore: visionResult.confidenceScore,
+          });
+          setToastMessage(`✨ AI analyzed shared photo & added ${visionResult.tags.length} smart tags!`);
+        } else {
+          // Text/URL — enrich with scraper
+          const enriched = await URLEnrichmentService.enrichUrlAsync(data);
+          addMemory(enriched);
+          setToastMessage('✨ Saved visual post card from shared link!');
+        }
+      } catch (e) {
+        console.warn('[FeedScreen] Share intent handling error:', e);
+      } finally {
+        setIsSaving(false);
+        setTimeout(() => setToastMessage(null), 3500);
+      }
+    };
+
+    // Check if app was opened via share intent
+    ShareIntentService.getSharedContent().then((shared) => {
+      if (shared.type && shared.data) {
+        handleSharedContent(shared.data, shared.type);
+      }
+    });
+
+    // Listen for share intents while app is open
+    const unsubscribe = ShareIntentService.addListener((type, data) => {
+      if (type === 'image') {
+        handleSharedContent(data, 'image');
+      } else {
+        handleSharedContent(data, 'text');
+      }
+    });
+
+    return unsubscribe;
+  }, []);
 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isShareSimulatorVisible, setIsShareSimulatorVisible] = useState(false);
@@ -139,6 +197,7 @@ export default function FeedScreen() {
       >
         <View style={styles.masonryGrid}>
           <View style={styles.masonryColumn}>
+            {isSaving && <SavingSkeletonCard />}
             {leftColumn.map((item) => (
               <MemoryCard
                 key={item.id}
@@ -167,9 +226,6 @@ export default function FeedScreen() {
           </View>
         )}
       </ScrollView>
-
-      {/* Synaptic Fusion Particle Overlay */}
-      <SynapticFusion isVisible={isSynapticFusing} />
 
       {/* Modals */}
       <TrashModal
@@ -200,6 +256,14 @@ export default function FeedScreen() {
         onReceiveContent={handleInboundShareReceive}
       />
 
+      {/* Toast Notification Banner */}
+      {toastMessage && (
+        <View style={styles.toastBanner}>
+          <CheckCircle2 size={16} color="#10B981" />
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      )}
+
       {/* Floating Capture Bar */}
       <MemoryDetailModal />
       <CaptureBar />
@@ -211,6 +275,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.bg,
+  },
+  toastBanner: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    right: 20,
+    backgroundColor: '#0F172A',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    zIndex: 999,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 6,
+  },
+  toastText: {
+    fontFamily: theme.fonts.sansBold,
+    fontSize: 12,
+    color: '#FFFFFF',
   },
   searchSection: {
     paddingHorizontal: 16,

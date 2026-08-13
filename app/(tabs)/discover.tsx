@@ -26,36 +26,28 @@ export default function DiscoverScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Header Banner */}
-      <View style={styles.banner}>
-        <View style={styles.bannerIconRow}>
-          <Wand2 size={18} color={theme.colors.auroraPurple} />
-          <Text style={styles.bannerTitle}>Connection Engine</Text>
-          <View style={styles.slopGateHeaderTag}>
-            <ShieldCheck size={11} color={theme.colors.auroraEmerald} />
-            <Text style={styles.slopGateHeaderTagText}>SLOP-GATE ACTIVE</Text>
-          </View>
+      {/* Clean Minimalist Header */}
+      <View style={styles.headerArea}>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.screenTitle}>Serendipity Engine</Text>
         </View>
-        <Text style={styles.bannerSub}>
-          Discover hidden patterns across your saved thoughts, screenshots, and notes.
-        </Text>
 
         <TouchableOpacity
-          style={[styles.triggerFusionBtn, isGeneratingConnections && styles.triggerFusionBtnDisabled]}
+          style={[styles.discoverBtn, isGeneratingConnections && styles.discoverBtnDisabled]}
           onPress={generateConnections}
           disabled={isGeneratingConnections || userMemoriesCount < 2}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
           {isGeneratingConnections ? (
             <ActivityIndicator size="small" color="#FFF" />
           ) : (
             <Sparkles size={14} color="#FFF" />
           )}
-          <Text style={styles.triggerFusionText}>
+          <Text style={styles.discoverBtnText}>
             {isGeneratingConnections
-              ? 'Discovering Patterns...'
+              ? 'Synthesizing Vectors...'
               : userMemoriesCount < 2
-                ? 'Save 2+ items first'
+                ? 'Save 2+ memories to discover'
                 : 'Discover New Connections'}
           </Text>
         </TouchableOpacity>
@@ -105,66 +97,55 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.bg,
   },
-  banner: {
-    backgroundColor: theme.colors.surface,
-    borderColor: theme.colors.border,
+  headerArea: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingTop: 54,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    padding: 16,
-    gap: 8,
+    borderBottomColor: 'rgba(15, 23, 42, 0.05)',
+    gap: 12,
   },
-  bannerIconRow: {
+  headerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
   },
-  bannerTitle: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 16,
+  screenTitle: {
+    fontFamily: theme.fonts.serif,
+    fontSize: 24,
     color: theme.colors.textPrimary,
+    letterSpacing: -0.3,
   },
-  slopGateHeaderTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.25)',
-    borderWidth: 1,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginLeft: 'auto',
+  proTag: {
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  slopGateHeaderTagText: {
-    fontSize: 8,
+  proTagText: {
     fontFamily: theme.fonts.sansBold,
-    color: theme.colors.auroraEmerald,
-    letterSpacing: 0.5,
+    fontSize: 11,
+    color: '#D97706',
   },
-  bannerSub: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    lineHeight: 16,
-  },
-  triggerFusionBtn: {
+  discoverBtn: {
     backgroundColor: theme.colors.auroraPurple,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: theme.radii.sm,
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 22,
     alignSelf: 'flex-start',
-    marginTop: 4,
   },
-  triggerFusionBtnDisabled: {
-    opacity: 0.7,
+  discoverBtnDisabled: {
+    opacity: 0.6,
   },
-  triggerFusionText: {
+  discoverBtnText: {
     fontFamily: theme.fonts.sansBold,
-    fontSize: 12,
-    color: '#FFF',
+    fontSize: 13,
+    color: '#FFFFFF',
   },
   scrollContent: {
     padding: 16,

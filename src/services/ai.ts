@@ -3,6 +3,27 @@ import { SlopGate } from './slopGate';
 import { EmbeddingsService } from './embeddings';
 
 export class AIService {
+  private static readonly SERVER_PROXY_URL = 'https://mindmesh-api.vercel.app';
+
+  /**
+   * Calls Vercel backend proxy for server-side Gemini AI generation
+   */
+  public static async callBackendProxy(prompt: string): Promise<string | null> {
+    try {
+      const response = await fetch(`${this.SERVER_PROXY_URL}/api/v1/ai/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+      const data = await response.json();
+      if (data.success && data.text) {
+        return data.text;
+      }
+    } catch (e) {
+      console.log('[AIService] Server proxy fallback to local processing:', e);
+    }
+    return null;
+  }
   /**
    * Discovers relationships between memories using on-device vector embedding cosine similarity & adaptive thresholding.
    * Outputs Explainability ("Why") + Evidence ("Proof") & Hallmark Slop Gate verification.

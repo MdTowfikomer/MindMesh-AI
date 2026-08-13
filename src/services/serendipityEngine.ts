@@ -65,8 +65,7 @@ RULES:
    * Stage 1: Fast discovery — returns connection with title + guidance only
    */
   static async discoverConnection(memories: MemoryItem[]): Promise<SerendipityConnection | null> {
-    const apiKey = API_CONFIG.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'your_api_key_here' || memories.length < 2) return null;
+    if (memories.length < 2) return null;
 
     // Random sample 6 memories from the full collection
     const sampled = this.randomSample(memories, 6);
@@ -126,9 +125,6 @@ RULES:
     connection: SerendipityConnection,
     memories: MemoryItem[]
   ): Promise<SerendipityConnection | null> {
-    const apiKey = API_CONFIG.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'your_api_key_here') return null;
-
     const source = memories.find(m => m.id === connection.sourceMemoryId);
     const target = memories.find(m => m.id === connection.targetMemoryId);
     if (!source || !target) return null;
@@ -164,26 +160,26 @@ RULES:
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   private static async callGemini(prompt: string, maxTokens: number): Promise<any | null> {
-    const url = `${API_CONFIG.GEMINI_ENDPOINT}/${API_CONFIG.GEMINI_MODEL}:generateContent?key=${API_CONFIG.GEMINI_API_KEY}`;
+    const url = `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.GENERATE_ENDPOINT}`;
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: maxTokens },
-      }),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-app-key': API_CONFIG.APP_SECRET,
+      },
+      body: JSON.stringify({ prompt }),
     });
 
     if (!response.ok) {
-      console.warn('SerendipityEngine: API error', response.status);
+      console.warn('SerendipityEngine: Proxy error', response.status);
       return null;
     }
 
     const data = await response.json();
-    const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!data.success || !data.text) return null;
 
-    let cleaned = rawText.trim();
+    let cleaned = data.text.trim();
     if (cleaned.startsWith('```')) {
       cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     }

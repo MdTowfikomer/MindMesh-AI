@@ -12,98 +12,62 @@ export interface VisionAnalysisResult {
 }
 
 /**
- * Google Gemini Flash 2.0 Vision AI Service
- * Sends image to Gemini for OCR, title generation, and auto-tagging.
- * Free tier: 15 req/min, 1500 req/day
+ * Vision AI Service — sends image to proxy server for Gemini analysis
+ * API key stays 100% server-side
  */
 export class VisionAIService {
   private static readonly PROMPT = `You are an AI assistant for a note-taking app similar to mymind. Analyze this image and return a JSON response with:
 
-1. "title": A short, descriptive title (max 8 words) that captures what this image is about. Like a human would label it. Examples: "LinkedIn Post About Open Source Programs", "Smart Sensors Infographic", "RevenueCat Pricing Page"
+1. "title": A short, descriptive title (max 8 words) that captures what this image is about. Like a human would label it.
 2. "tldr": A 1-2 sentence summary of the content in the image.
-3. "tags": An array of 3-6 relevant tags (single words or short phrases). Be specific - use proper nouns, topics, and categories. Examples: ["LinkedIn", "Open Source", "GSoC", "Engineering"]
+3. "tags": An array of 3-6 relevant tags (single words or short phrases). Be specific - use proper nouns, topics, and categories.
 4. "classification": One of: "image", "pricing", "code", "whiteboard", "text"
-   - "pricing" if it shows pricing, subscriptions, paywalls, or money-related content
-   - "code" if it shows code snippets, terminal, IDE, or programming content
-   - "whiteboard" if it shows diagrams, flowcharts, architecture, or hand-drawn sketches
-   - "text" if it's primarily a text post or note (like a tweet, LinkedIn post, Reddit post)
-   - "image" for everything else (photos, screenshots of apps, UI designs, infographics)
 5. "ocrText": Extract any readable text from the image (first 300 chars max). If no text, return empty string.
 
 IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Just the raw JSON object.`;
 
-  /**
-   * Analyze an image using Gemini Vision
-   */
   static async analyzeImage(imageUri: string): Promise<VisionAnalysisResult> {
-    const apiKey = API_CONFIG.GEMINI_API_KEY;
-
-    if (!apiKey || apiKey === 'your_api_key_here') {
-      console.warn('VisionAI: No Gemini API key configured. Using fallback.');
-      return this.getFallbackResult();
-    }
-
     try {
       // Read image as base64
       const base64 = await readAsStringAsync(imageUri, {
         encoding: EncodingType.Base64,
       });
 
-      // Determine MIME type from URI
       const mimeType = this.getMimeType(imageUri);
-
-      // Call Gemini API
-      const url = `${API_CONFIG.GEMINI_ENDPOINT}/${API_CONFIG.GEMINI_MODEL}:generateContent?key=${apiKey}`;
+      const url = `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.VISION_ENDPOINT}`;
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-key': API_CONFIG.APP_SECRET,
+        },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: this.PROMPT },
-                {
-                  inlineData: {
-                    mimeType,
-                    data: base64,
-                  },
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 500,
-          },
+          prompt: this.PROMPT,
+          imageBase64: base64,
+          mimeType,
         }),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.warn('VisionAI: API error', response.status, errorText);
+        console.warn('VisionAI: Proxy error', response.status);
         return this.getFallbackResult();
       }
 
       const data = await response.json();
+      if (!data.success || !data.text) {
+        return this.getFallbackResult();
+      }
 
-      // Extract text from Gemini response
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      const parsed = this.parseResponse(rawText);
-
-      return parsed;
+      return this.parseResponse(data.text);
     } catch (error) {
       console.warn('VisionAI: Failed to analyze image', error);
       return this.getFallbackResult();
     }
   }
 
-  /**
-   * Parse Gemini's JSON response, handling edge cases
-   */
   private static parseResponse(rawText: string): VisionAnalysisResult {
     try {
-      // Strip markdown code fences if present
       let cleaned = rawText.trim();
       if (cleaned.startsWith('```')) {
         cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
@@ -125,20 +89,12 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
     }
   }
 
-  /**
-   * Validate classification is one of our accepted types
-   */
   private static validateClassification(cls: string): MemoryType {
     const valid: MemoryType[] = ['image', 'pricing', 'code', 'whiteboard', 'text'];
-    if (valid.includes(cls as MemoryType)) {
-      return cls as MemoryType;
-    }
+    if (valid.includes(cls as MemoryType)) return cls as MemoryType;
     return 'image';
   }
 
-  /**
-   * Determine MIME type from file URI
-   */
   private static getMimeType(uri: string): string {
     const lower = uri.toLowerCase();
     if (lower.includes('.png')) return 'image/png';
@@ -148,9 +104,6 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
     return 'image/jpeg';
   }
 
-  /**
-   * Fallback when API is unavailable
-   */
   private static getFallbackResult(): VisionAnalysisResult {
     const now = new Date();
     const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' });

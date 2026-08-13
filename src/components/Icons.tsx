@@ -8,7 +8,11 @@ interface IconProps {
 }
 
 export const Sparkles: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
-  <Ionicons name="sparkles" size={size} color={color} style={style} />
+  <Feather name="compass" size={size} color={color} style={style} />
+);
+
+export const Compass: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="compass" size={size} color={color} style={style} />
 );
 
 export const Mic: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
@@ -92,7 +96,7 @@ export const ArrowUp: React.FC<IconProps> = ({ size = 18, color = '#FFF', style 
 );
 
 export const Wand2: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
-  <Ionicons name="sparkles" size={size} color={color} style={style} />
+  <Feather name="cpu" size={size} color={color} style={style} />
 );
 
 export const Flame: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (

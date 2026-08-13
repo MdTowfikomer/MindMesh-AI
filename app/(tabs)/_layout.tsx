@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { theme } from '../../src/theme/tokens';
 import { LayoutGrid, Sparkles, Folder, Crown, RotateCcw } from '../../src/components/Icons';
 import { useMemoryStore } from '../../src/stores/memoryStore';
+import { SQLiteDatabaseService } from '../../src/services/sqliteDatabase';
 
 export default function TabLayout() {
-  const { openPaywall, userStats } = useMemoryStore();
+  const { openPaywall, userStats, loadStoredMemories } = useMemoryStore();
+
+  useEffect(() => {
+    loadStoredMemories();
+  }, [loadStoredMemories]);
 
   return (
     <Tabs
@@ -20,16 +25,7 @@ export default function TabLayout() {
           fontSize: 20,
           color: theme.colors.textPrimary,
         },
-        headerRight: () => (
-          <TouchableOpacity
-            style={styles.proHeaderBadge}
-            onPress={openPaywall}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Crown size={12} color={theme.colors.auroraAmber} />
-            <Text style={styles.proHeaderText}>{userStats.isPro ? 'Pro' : 'Upgrade'}</Text>
-          </TouchableOpacity>
-        ),
+        headerRight: () => null,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
           borderTopColor: theme.colors.border,
@@ -58,8 +54,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: 'Connection Engine',
+          title: 'Discovery',
           tabBarLabel: 'Discovery',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Sparkles size={size - 2} color={color} />,
         }}
       />

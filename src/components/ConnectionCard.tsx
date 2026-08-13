@@ -29,42 +29,31 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
 
   return (
     <View style={[styles.card, isFullyCompleted && styles.completedCard]}>
-      {/* Header Row */}
+      {/* Editorial Title & Match Tag */}
       <View style={styles.header}>
-        <View style={styles.badgeRow}>
-          <View style={styles.badge}>
-            <Sparkles size={12} color={theme.colors.auroraPurple} />
-            <Text style={styles.badgeText}>{(connection.confidenceScore * 100).toFixed(0)}% SYNAPTIC MATCH</Text>
-          </View>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{(connection.confidenceScore * 100).toFixed(0)}% MATCH</Text>
         </View>
 
-        {/* Live Progress Ring Counter */}
-        {totalActions > 0 && (
-          <View style={[styles.progressBadge, isFullyCompleted && styles.progressBadgeDone]}>
-            <Text style={[styles.progressBadgeText, isFullyCompleted && styles.progressBadgeTextDone]}>
-              {completedActions.length}/{totalActions} STEPS
-            </Text>
-          </View>
-        )}
+        <Text style={styles.contextSpaceText}>#{connection.contextSpace}</Text>
       </View>
 
       {/* Connection Title */}
       <Text style={styles.title}>{connection.title}</Text>
       <Text style={styles.buildIdea}>{connection.suggestedBuildIdea}</Text>
 
-      {/* Actionable Founder Guidance (2 Paragraphs) */}
+      {/* Pattern Discovered Synthesis */}
       {connection.actionableGuidance && (
         <View style={styles.guidanceBox}>
-          <Text style={styles.guidanceLabel}>PATTERN DISCOVERED:</Text>
           <Text style={styles.guidanceParagraph}>{connection.actionableGuidance.paragraph1}</Text>
           <Text style={styles.guidanceParagraph}>{connection.actionableGuidance.paragraph2}</Text>
         </View>
       )}
 
-      {/* Source Reference — tells user which items created this connection */}
+      {/* Sourced From Reference Text */}
       {connection.evidenceProof.quoteSnippet ? (
         <Text style={styles.sourcedFromText}>
-          📎 {connection.evidenceProof.quoteSnippet}
+          🔗 {connection.evidenceProof.quoteSnippet}
         </Text>
       ) : null}
 
@@ -74,7 +63,7 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
           <View style={styles.nextActionsHeader}>
             <Text style={styles.nextActionsLabel}>RECOMMENDED NEXT STEPS (TAP TO COMPLETE):</Text>
             {isFullyCompleted && <Text style={styles.shippedTag}>✓ READY TO SHIP</Text>}
-          </View>
+          </View> 
 
           {connection.nextActions!.map((actionText, idx) => {
             const isChecked = completedActions.includes(actionText);
@@ -212,14 +201,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: theme.radii.xs,
-    borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.25)',
   },
   slopBadgeText: {
     fontFamily: theme.fonts.sansBold,
     fontSize: 9,
     color: theme.colors.auroraEmerald,
     letterSpacing: 0.4,
+  },
+  contextSpaceText: {
+    fontFamily: theme.fonts.sansMedium,
+    fontSize: 11,
+    color: theme.colors.textMuted,
   },
   progressBadge: {
     backgroundColor: 'rgba(15, 23, 42, 0.05)',

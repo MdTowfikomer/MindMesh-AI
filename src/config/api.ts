@@ -1,9 +1,16 @@
-import Constants from 'expo-constants';
+// API Configuration — All AI calls go through the Vercel proxy server (API keys stay server-side)
 
-// Reads from .env via Expo's extra config or environment variables
-// Add GEMINI_API_KEY to your .env file (never commit it)
 export const API_CONFIG = {
-  GEMINI_API_KEY: Constants.expoConfig?.extra?.geminiApiKey || process.env.EXPO_PUBLIC_GEMINI_API_KEY || '',
-  GEMINI_MODEL: 'gemini-3.5-flash-lite',
-  GEMINI_ENDPOINT: 'https://generativelanguage.googleapis.com/v1beta/models',
+  // Deployed production Vercel proxy server URL
+  PROXY_BASE_URL: process.env.EXPO_PUBLIC_PROXY_URL || 'https://mindmesh-api.vercel.app',
+
+  // App secret for authenticating with the proxy
+  APP_SECRET: process.env.EXPO_PUBLIC_APP_SECRET || '',
+
+  // Endpoints
+  VISION_ENDPOINT: '/api/v1/ai/vision',
+  AUDIO_ENDPOINT: '/api/v1/ai/audio',
+  GENERATE_ENDPOINT: '/api/v1/ai/generate',
+  ENRICH_URL_ENDPOINT: '/api/v1/enrich-url',
+  CONFIG_ENDPOINT: '/api/v1/config',
 };

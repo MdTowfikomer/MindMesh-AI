@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { MemoryItem, SerendipityConnection, BuildPlan, UserStats, SmartSpace } from '../types/mindmesh';
 import { seedMemories, seedBuildPlan } from '../data/seedMemories';
 import { SerendipityEngine } from '../services/serendipityEngine';
+import { SQLiteDatabaseService } from '../services/sqliteDatabase';
 
 interface MemoryStoreState {
   memories: MemoryItem[]; // Active non-deleted memories
@@ -60,6 +61,9 @@ interface MemoryStoreState {
   deepDiveConnection: (connectionId: string) => Promise<void>;
   unlockProAccess: () => void;
   toggleNextAction: (connectionId: string, actionText: string) => void;
+  loadStoredMemories: () => Promise<void>;
+  isSaving: boolean;
+  setIsSaving: (saving: boolean) => void;
 }
 
 export const useMemoryStore = create<MemoryStoreState>((set) => ({
@@ -68,6 +72,35 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   savedSmartSpaces: [],
   connections: [],
   activeBuildPlan: seedBuildPlan,
+  isSaving: false,
+  setIsSaving: (saving: boolean) => set({ isSaving: saving }),
+
+  loadStoredMemories: async () => {
+    try {
+      await SQLiteDatabaseService.initDatabase();
+      const sqliteMemories = await SQLiteDatabaseService.getAllMemories();
+      const sqliteBuildPlan = await SQLiteDatabaseService.getLatestBuildPlan();
+
+      if (sqliteMemories.length > 0) {
+        set({ memories: sqliteMemories });
+      } else {
+        // Seed initial memories into SQLite if database is fresh
+        for (const seedMem of seedMemories.filter((m) => !m.deletedAt)) {
+          await SQLiteDatabaseService.saveMemory(seedMem);
+        }
+        const seeded = await SQLiteDatabaseService.getAllMemories();
+        if (seeded.length > 0) {
+          set({ memories: seeded });
+        }
+      }
+
+      if (sqliteBuildPlan) {
+        set({ activeBuildPlan: sqliteBuildPlan });
+      }
+    } catch (error) {
+      console.error('[MemoryStore] Failed to load stored memories from SQLite:', error);
+    }
+  },
   selectedMemory: null,
   isMemoryDetailVisible: false,
   isTrashModalVisible: false,
@@ -96,6 +129,7 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
       id: `mem-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
+    SQLiteDatabaseService.saveMemory(newMemory);
     set((state) => ({
       memories: [newMemory, ...state.memories],
       userStats: {
@@ -106,6 +140,7 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   },
 
   deleteMemory: (id) => {
+    SQLiteDatabaseService.deleteMemory(id);
     set((state) => {
       const target = state.memories.find((m) => m.id === id);
       if (!target) return state;
@@ -124,6 +159,7 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
       const target = state.trash.find((m) => m.id === id);
       if (!target) return state;
       const restored: MemoryItem = { ...target, deletedAt: undefined };
+      SQLiteDatabaseService.saveMemory(restored);
       return {
         trash: state.trash.filter((m) => m.id !== id),
         memories: [restored, ...state.memories],
@@ -199,7 +235,14 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
 
   updateMemoryTags: (id, tags) => {
     set((state) => {
-      const updatedMemories = state.memories.map((m) => (m.id === id ? { ...m, tags } : m));
+      const updatedMemories = state.memories.map((m) => {
+        if (m.id === id) {
+          const updated = { ...m, tags };
+          SQLiteDatabaseService.saveMemory(updated);
+          return updated;
+        }
+        return m;
+      });
       const updatedSelected = state.selectedMemory?.id === id ? { ...state.selectedMemory, tags } : state.selectedMemory;
       return { memories: updatedMemories, selectedMemory: updatedSelected };
     });
@@ -207,7 +250,14 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
 
   updateMemoryNote: (id, personalNote) => {
     set((state) => {
-      const updatedMemories = state.memories.map((m) => (m.id === id ? { ...m, personalNote } : m));
+      const updatedMemories = state.memories.map((m) => {
+        if (m.id === id) {
+          const updated = { ...m, personalNote };
+          SQLiteDatabaseService.saveMemory(updated);
+          return updated;
+        }
+        return m;
+      });
       const updatedSelected = state.selectedMemory?.id === id ? { ...state.selectedMemory, personalNote } : state.selectedMemory;
       return { memories: updatedMemories, selectedMemory: updatedSelected };
     });
@@ -215,7 +265,14 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
 
   updateMemoryDirectory: (id, directory) => {
     set((state) => {
-      const updatedMemories = state.memories.map((m) => (m.id === id ? { ...m, directory, contextSpace: directory } : m));
+      const updatedMemories = state.memories.map((m) => {
+        if (m.id === id) {
+          const updated = { ...m, directory, contextSpace: directory };
+          SQLiteDatabaseService.saveMemory(updated);
+          return updated;
+        }
+        return m;
+      });
       const updatedSelected = state.selectedMemory?.id === id ? { ...state.selectedMemory, directory, contextSpace: directory } : state.selectedMemory;
       return { memories: updatedMemories, selectedMemory: updatedSelected };
     });

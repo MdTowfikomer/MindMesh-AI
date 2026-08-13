@@ -150,12 +150,12 @@ export const RediscoverySwipeDeck: React.FC<RediscoverySwipeDeckProps> = ({
 
       {/* Swipe Action Buttons */}
       <View style={styles.actionButtonsRow}>
-        <TouchableOpacity style={[styles.actionCircleBtn, styles.trashCircleBtn]} onPress={() => forceSwipe('left')}>
-          <Trash2 size={22} color={theme.colors.tagPricingText} />
+        <TouchableOpacity style={[styles.actionCircleBtn, styles.trashCircleBtn]} onPress={() => forceSwipe('left')} activeOpacity={0.85}>
+          <Trash2 size={22} color="#EF4444" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.actionCircleBtn, styles.keepCircleBtn]} onPress={() => forceSwipe('right')}>
-          <CheckCircle2 size={22} color={theme.colors.auroraEmerald} />
+        <TouchableOpacity style={[styles.actionCircleBtn, styles.keepCircleBtn]} onPress={() => forceSwipe('right')} activeOpacity={0.85}>
+          <CheckCircle2 size={24} color="#059669" />
         </TouchableOpacity>
       </View>
     </View>
@@ -279,22 +279,26 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   actionCircleBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     justifyContent: 'center',
     alignItems: 'center',
-    ...theme.shadows.card,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 3,
   },
   trashCircleBtn: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: 'rgba(239, 68, 68, 0.3)',
-    borderWidth: 1,
+    backgroundColor: '#FEF2F2',
+    borderColor: 'rgba(239, 68, 68, 0.35)',
+    borderWidth: 1.5,
   },
   keepCircleBtn: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    borderWidth: 1,
+    backgroundColor: '#ECFDF5',
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+    borderWidth: 1.5,
   },
   completedContainer: {
     paddingVertical: 60,

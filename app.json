@@ -2,7 +2,7 @@
   "expo": {
     "name": "MindMesh AI",
     "slug": "mindmesh-ai",
-    "version": "1.0.0",
+    "version": "0.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "mindmesh",
@@ -17,11 +17,28 @@
       "bundleIdentifier": "com.mindmesh.ai"
     },
     "android": {
+      "versionCode": 2,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FAFAF9"
       },
-      "package": "com.mindmesh.ai"
+      "package": "com.mindmesh.ai",
+      "intentFilters": [
+        {
+          "action": "SEND",
+          "category": [
+            "DEFAULT"
+          ],
+          "data": [
+            {
+              "mimeType": "text/plain"
+            },
+            {
+              "mimeType": "image/*"
+            }
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -41,7 +58,8 @@
         {
           "photosPermission": "Allow MindMesh to select screenshots for AI analysis."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

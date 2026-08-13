@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Dimensions, StatusBar } from 'react-native';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, TextInput, Modal, Dimensions, StatusBar, BackHandler } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMemoryStore } from '../../src/stores/memoryStore';
 import { MemoryItem } from '../../src/types/mindmesh';
@@ -22,6 +22,28 @@ export default function SpacesScreen() {
   const [newSpaceName, setNewSpaceName] = useState('');
   const [selectedSpace, setSelectedSpace] = useState<SpaceCollection | null>(null);
   const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
+
+  // Intercept Android hardware back press & back swipe gesture so user remains inside Spaces tab
+  useEffect(() => {
+    const onBackPress = () => {
+      if (fullScreenImage) {
+        setFullScreenImage(null);
+        return true;
+      }
+      if (selectedSpace) {
+        setSelectedSpace(null);
+        return true;
+      }
+      if (isCreateModalVisible) {
+        setIsCreateModalVisible(false);
+        return true;
+      }
+      return false;
+    };
+
+    const backSubscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () => backSubscription.remove();
+  }, [fullScreenImage, selectedSpace, isCreateModalVisible]);
 
   // Auto-generate collections — only from user-uploaded memories (not seed data)
   const autoCollections = useMemo(() => {
