@@ -17,6 +17,22 @@ import {
   ChevronRight,
 } from '../../src/components/Icons';
 
+const SEED_IDS = new Set([
+  'mem-shipathon-official',
+  'mem-paywall-inspo',
+  'mem-voice-shipathon',
+  'mem-quote-pg',
+  'mem-synaptic-arch',
+  'mem-article-1',
+  'mem-video-1',
+  'mem-linkedin',
+  'mem-1',
+  'mem-2',
+  'mem-4',
+  'mem-6',
+  'mem-quote-1',
+]);
+
 export default function DiscoverScreen() {
   const {
     memories,
@@ -26,7 +42,7 @@ export default function DiscoverScreen() {
     generateConnections,
   } = useMemoryStore();
 
-  const userMemoriesCount = memories.filter((m) => /^mem-\d+$/.test(m.id)).length;
+  const userMemoriesCount = memories.filter((m) => !SEED_IDS.has(m.id)).length;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

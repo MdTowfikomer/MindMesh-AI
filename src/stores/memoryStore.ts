@@ -144,17 +144,32 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
       const byok = await ByokService.loadConfig();
       set({ byokConfig: byok });
 
-      if (sqliteMemories.length > 0) {
-        set({ memories: sqliteMemories });
+      // Purge obsolete legacy seed memories from previous builds
+      const LEGACY_SEED_IDS = [
+        'mem-article-1',
+        'mem-video-1',
+        'mem-linkedin',
+        'mem-1',
+        'mem-2',
+        'mem-4',
+        'mem-6',
+        'mem-quote-1',
+        'mem-synaptic-arch',
+      ];
+      for (const legacyId of LEGACY_SEED_IDS) {
+        await SQLiteDatabaseService.deleteMemory(legacyId);
+      }
+
+      // Ensure fresh official Shipathon seed memories are inserted / updated
+      for (const seedMem of seedMemories.filter((m) => !m.deletedAt)) {
+        await SQLiteDatabaseService.saveMemory(seedMem);
+      }
+
+      const freshMemories = await SQLiteDatabaseService.getAllMemories();
+      if (freshMemories.length > 0) {
+        set({ memories: freshMemories });
       } else {
-        // Seed initial memories into SQLite if database is fresh
-        for (const seedMem of seedMemories.filter((m) => !m.deletedAt)) {
-          await SQLiteDatabaseService.saveMemory(seedMem);
-        }
-        const seeded = await SQLiteDatabaseService.getAllMemories();
-        if (seeded.length > 0) {
-          set({ memories: seeded });
-        }
+        set({ memories: seedMemories.filter((m) => !m.deletedAt) });
       }
 
       if (sqliteBuildPlan) {
@@ -362,14 +377,29 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
 
   generateConnections: async () => {
     const state = useMemoryStore.getState();
-    const allMemories = state.memories;
-    if (allMemories.length < 2 || state.isGeneratingConnections) return;
+    const SEED_IDS = new Set([
+      'mem-shipathon-official',
+      'mem-paywall-inspo',
+      'mem-voice-shipathon',
+      'mem-quote-pg',
+      'mem-synaptic-arch',
+      'mem-article-1',
+      'mem-video-1',
+      'mem-linkedin',
+      'mem-1',
+      'mem-2',
+      'mem-4',
+      'mem-6',
+      'mem-quote-1',
+    ]);
+    const userMemories = state.memories.filter((m) => !SEED_IDS.has(m.id));
+    if (userMemories.length < 2 || state.isGeneratingConnections) return;
 
     set({ isGeneratingConnections: true, isSynapticFusing: true });
 
     try {
-      // Stage 1: Fast discovery — title + guidance
-      const connection = await SerendipityEngine.discoverConnection(allMemories);
+      // Stage 1: Fast discovery — title + guidance strictly on user's own memories
+      const connection = await SerendipityEngine.discoverConnection(userMemories);
       if (connection) {
         set((s) => ({
           connections: [connection, ...s.connections],
