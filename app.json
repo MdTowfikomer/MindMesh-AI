@@ -34,7 +34,13 @@
               "mimeType": "text/plain"
             },
             {
+              "mimeType": "text/*"
+            },
+            {
               "mimeType": "image/*"
+            },
+            {
+              "mimeType": "*/*"
             }
           ]
         },

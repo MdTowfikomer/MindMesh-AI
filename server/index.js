@@ -142,7 +142,54 @@ app.post('/api/v1/log', (req, res) => {
   return res.json({ success: true, received: true });
 });
 
-// ─── Social & Web URL Enrichment Scraper ──────────────────────────────────────
+// ─── AI Tag Generator Helper with Fast Timeout & Hashtag Fallback ────────────
+async function generateAITags(content, domain = '') {
+  const extractedTags = [];
+
+  // Extract explicit #hashtags first
+  if (content) {
+    const hashMatches = content.match(/#([\w\d_-]+)/g);
+    if (hashMatches) {
+      for (const h of hashMatches) {
+        const cleanTag = h.replace('#', '').trim();
+        if (cleanTag.length >= 2 && cleanTag.length <= 25) {
+          const formatted = cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1);
+          if (!extractedTags.includes(formatted)) extractedTags.push(formatted);
+        }
+      }
+    }
+  }
+
+  // Call LLM with 2.5-second timeout
+  try {
+    if (content && content.length >= 5) {
+      const prompt = `You are an expert AI taxonomy tagger. Given this video caption/content: "${content.slice(0, 350)}" from ${domain}. Return a JSON array of 3 to 5 concise, highly relevant topic tags (single words or 2-word phrases). Example: ["Government Schools", "Rajasthan", "Education Policy"]. Return ONLY the JSON array.`;
+      const contents = [{ parts: [{ text: prompt }] }];
+      const aiPromise = generateContentGemini(contents, { responseMimeType: 'application/json' });
+      const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('AI timeout')), 2500));
+      
+      const result = await Promise.race([aiPromise, timeoutPromise]);
+      if (result && result.text) {
+        let cleaned = result.text.trim();
+        const match = cleaned.match(/\[[\s\S]*\]/);
+        if (match) cleaned = match[0];
+        const parsed = JSON.parse(cleaned);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const llmTags = parsed.map(t => String(t).trim()).filter(Boolean);
+          for (const t of llmTags) {
+            if (!extractedTags.includes(t)) extractedTags.push(t);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[MindMesh Server] AI tag generation fallback:', err.message);
+  }
+
+  return extractedTags.slice(0, 6);
+}
+
+// ─── Social & Web URL Enrichment Scraper (Instagram, YouTube, TikTok, Web) ───
 app.post('/api/v1/enrich-url', async (req, res) => {
   try {
     const { url } = req.body;
@@ -150,6 +197,92 @@ app.post('/api/v1/enrich-url', async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
+    let domain = 'web.com';
+    try {
+      domain = new URL(url).hostname.replace(/^www\./, '');
+    } catch {}
+
+    const isInstagram = domain.includes('instagram.com');
+    const isYouTube = domain.includes('youtube.com') || domain.includes('youtu.be');
+    const isTikTok = domain.includes('tiktok.com');
+    const isTwitter = domain.includes('twitter.com') || domain.includes('x.com');
+
+    // 1. YouTube specialized fast extraction
+    if (isYouTube) {
+      let videoId = null;
+      if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1]?.split('?')[0];
+      } else if (url.includes('watch?v=' || url.includes('watch/'))) {
+        videoId = url.split('watch?v=')[1]?.split('&')[0];
+      } else if (url.includes('/shorts/')) {
+        videoId = url.split('/shorts/')[1]?.split('?')[0];
+      }
+
+      if (videoId) {
+        try {
+          const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+          if (oembedRes.ok) {
+            const data = await oembedRes.json();
+            const desc = `Video by ${data.author_name || 'YouTube creator'}: ${data.title || ''}`;
+            const aiTags = await generateAITags(desc, 'YouTube');
+
+            return res.json({
+              success: true,
+              blocked: false,
+              imageUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+              fallbackImageUrl: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+              title: '', // No title needed per user requirement
+              description: desc,
+              author: data.author_name || null,
+              mediaType: 'video',
+              tags: aiTags.length > 0 ? aiTags : ['YouTube', 'Video'],
+              domain: 'youtube.com',
+            });
+          }
+        } catch (e) {
+          console.warn('[MindMesh Server] YouTube oEmbed fallback error:', e.message);
+        }
+      }
+    }
+
+    // 2. Headless Browser Scraper (Instagram, TikTok, Twitter, Dynamic JS Webpages)
+    if (isInstagram || isTikTok || isTwitter) {
+      try {
+        const microRes = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`, {
+          headers: { 'Accept': 'application/json' },
+        });
+
+        if (microRes.ok) {
+          const microJson = await microRes.json();
+          if (microJson.status === 'success' && microJson.data) {
+            const d = microJson.data;
+            const imgUrl = d.image?.url || d.logo?.url;
+            if (imgUrl) {
+              const isReelOrVideo = url.includes('/reel/') || url.includes('/reels/') || isTikTok || isYouTube;
+              const rawCaption = d.description || d.title || '';
+              const aiTags = await generateAITags(rawCaption, domain);
+
+              console.log(`[MindMesh Server] ✨ Enriched ${domain} via LLM Tags: [${aiTags.join(', ')}]`);
+              return res.json({
+                success: true,
+                blocked: false,
+                imageUrl: imgUrl,
+                title: '', // No title needed per user requirement
+                description: rawCaption,
+                author: d.author || null,
+                mediaType: isReelOrVideo ? 'video' : 'image',
+                tags: aiTags.length > 0 ? aiTags : [domain.split('.')[0], 'Social'],
+                domain,
+              });
+            }
+          }
+        }
+      } catch (microErr) {
+        console.warn(`[MindMesh Server] Headless resolver error for ${domain}:`, microErr.message);
+      }
+    }
+
+    // 3. Standard OpenGraph meta tag scraper for general websites
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -167,8 +300,26 @@ app.post('/api/v1/enrich-url', async (req, res) => {
       response.status === 429;
 
     if (isBlocked) {
-      let domain = 'unknown';
-      try { domain = new URL(url).hostname; } catch (e) {}
+      // Try headless fallback before giving up
+      try {
+        const microRes = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+        if (microRes.ok) {
+          const microJson = await microRes.json();
+          if (microJson.status === 'success' && microJson.data?.image?.url) {
+            const d = microJson.data;
+            return res.json({
+              success: true,
+              blocked: false,
+              imageUrl: d.image.url,
+              title: d.title || `Visual Card from ${domain}`,
+              description: d.description || `Captured post from ${domain}.`,
+              author: d.author || null,
+              mediaType: 'image',
+              domain,
+            });
+          }
+        }
+      } catch {}
 
       return res.json({
         success: false,
@@ -189,11 +340,14 @@ app.post('/api/v1/enrich-url', async (req, res) => {
       success: true,
       blocked: false,
       imageUrl: ogImageMatch ? ogImageMatch[1] : null,
-      title: ogTitleMatch ? ogTitleMatch[1] : 'Social Media Post',
-      description: ogDescMatch ? ogDescMatch[1] : 'Captured social media post visual card.',
+      title: ogTitleMatch ? ogTitleMatch[1] : `Post from ${domain}`,
+      description: ogDescMatch ? ogDescMatch[1] : `Captured visual media from ${domain}.`,
+      author: null,
+      mediaType: 'image',
+      domain,
     });
   } catch (error) {
-    console.error(`[MindMesh Server] ❌ SCRAPE FAILED for ${req.body.url}:`, error.message);
+    console.error(`[MindMesh Server] ❌ SCRAPE FAILED for ${req.body?.url}:`, error.message);
     return res.status(500).json({
       error: 'URL Enrichment Failed',
       blocked: true,

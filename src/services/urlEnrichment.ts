@@ -12,7 +12,20 @@ export class URLEnrichmentService {
   public static extractUrl(input: string): string {
     const urlMatch = input.match(/(https?:\/\/[^\s]+)/i);
     if (urlMatch) {
-      return urlMatch[1].replace(/[\,\.\"\')]+$/, '').trim();
+      let rawUrl = urlMatch[1].replace(/[\,\.\"\')]+$/, '').trim();
+      // Clean tracking parameters from Instagram/YouTube shares
+      try {
+        const u = new URL(rawUrl);
+        if (u.hostname.includes('instagram.com') || u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+          u.searchParams.delete('igsi');
+          u.searchParams.delete('utm_source');
+          u.searchParams.delete('utm_medium');
+          u.searchParams.delete('utm_campaign');
+          u.searchParams.delete('feature');
+          rawUrl = u.toString();
+        }
+      } catch {}
+      return rawUrl;
     }
     return input.trim();
   }
@@ -29,23 +42,25 @@ export class URLEnrichmentService {
       try {
         const parsedUrl = new URL(cleanUrl);
         domain = parsedUrl.hostname.replace(/^www\./, '');
-      } catch (e) {
+      } catch {
         domain = 'web link';
       }
 
+      const isVideo = cleanUrl.includes('/reel/') || cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be') || cleanUrl.includes('tiktok.com');
+
       return {
-        type: 'image',
+        type: isVideo ? 'video' : 'image',
         title: `Visual Content from ${domain}`,
         content: `Captured post and visual media from ${domain}.`,
         imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-        tags: ['Social', 'VisualCard', domain.split('.')[0]],
+        tags: [domain.includes('instagram') ? 'Instagram Reel' : 'Social', 'VisualCard', domain.split('.')[0]],
         contextSpace: 'Idea',
         urlMetadata: {
           url: cleanUrl,
           domain,
           siteName: domain,
         },
-        aspectRatio: 1.1,
+        aspectRatio: isVideo ? 1.4 : 1.1,
       };
     }
 
@@ -60,8 +75,8 @@ export class URLEnrichmentService {
   }
 
   /**
-   * Async 2-Stage Metadata & Image Scraper Engine (Local OpenGraph + Server Proxy Fallback)
-   * Handles Instagram, LinkedIn, Twitter/X, and Web post URLs shared from any app.
+   * Async Multi-Stage Metadata & Image Scraper Engine
+   * Handles Instagram Reels/Posts, YouTube, TikTok, Twitter/X, and Web links.
    */
   public static async enrichUrlAsync(input: string): Promise<Omit<MemoryItem, 'id' | 'createdAt'>> {
     const cleanUrl = this.extractUrl(input);
@@ -75,31 +90,50 @@ export class URLEnrichmentService {
     try {
       const parsedUrl = new URL(cleanUrl);
       domain = parsedUrl.hostname.replace(/^www\./, '');
-    } catch (e) {
+    } catch {
       domain = 'web link';
     }
 
     let scrapedImage: string | null = null;
     let scrapedTitle: string | null = null;
     let scrapedDescription: string | null = null;
+    let scrapedAuthor: string | null = null;
+    let detectedType: MemoryType = cleanUrl.includes('/reel/') || cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be') || cleanUrl.includes('tiktok.com') ? 'video' : 'image';
 
-    // Special Instagram oEmbed fallback
-    if (domain.includes('instagram.com')) {
-      try {
-        const oembedRes = await fetch(`https://api.instagram.com/oembed?url=${encodeURIComponent(cleanUrl)}`);
-        if (oembedRes.ok) {
-          const oembed = await oembedRes.json();
-          if (oembed.thumbnail_url) scrapedImage = oembed.thumbnail_url;
-          if (oembed.title) scrapedTitle = oembed.title;
-          if (oembed.author_name) scrapedDescription = `Instagram post by @${oembed.author_name}`;
+    let serverTags: string[] = [];
+
+    // Stage 1: Call Backend Scraper Proxy (Equipped with Headless Microlink, YouTube oEmbed, OpenGraph, and LLM Tagging)
+    try {
+      const res = await fetch(this.ENRICH_URL_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-app-key': API_CONFIG.APP_SECRET || 'SHIPATHON',
+        },
+        body: JSON.stringify({ url: cleanUrl }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.imageUrl) {
+          scrapedImage = data.imageUrl;
+          scrapedTitle = data.title || '';
+          scrapedDescription = data.description;
+          scrapedAuthor = data.author;
+          if (Array.isArray(data.tags) && data.tags.length > 0) {
+            serverTags = data.tags;
+          }
+          if (data.mediaType === 'video') {
+            detectedType = 'video';
+          }
         }
-      } catch (e) {
-        console.log('[URLEnrichment] Instagram oEmbed bypass:', e);
       }
+    } catch (e) {
+      console.warn('[URLEnrichment] Server proxy enrichment error:', e);
     }
 
-    // Stage 1: Quick Local OpenGraph Fetch Attempt
-    if (!scrapedImage || !scrapedTitle) {
+    // Stage 2: Local OpenGraph Fallback if proxy was offline or returned empty
+    if (!scrapedImage) {
       try {
         const response = await fetch(cleanUrl, {
           headers: {
@@ -116,77 +150,70 @@ export class URLEnrichmentService {
         if (ogTitleMatch) scrapedTitle = ogTitleMatch[1];
         if (ogDescMatch) scrapedDescription = ogDescMatch[1];
       } catch (e) {
-        console.log('[URLEnrichment] Local scrape attempt bypassed:', e);
+        console.warn('[URLEnrichment] Local scrape attempt bypassed:', e);
       }
     }
 
-    // Stage 2: Server Enrichment Proxy Fallback with Auth Headers
-    if (!scrapedImage || !scrapedDescription) {
-      try {
-        const res = await fetch(this.ENRICH_URL_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-app-key': API_CONFIG.APP_SECRET,
-          },
-          body: JSON.stringify({ url: cleanUrl }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          if (data.imageUrl) scrapedImage = data.imageUrl;
-          if (data.title) scrapedTitle = data.title;
-          if (data.description) scrapedDescription = data.description;
-        }
-      } catch (e) {
-        console.log('[URLEnrichment] Server proxy enrichment error:', e);
-      }
-    }
-
-    // Generate intelligent Mind Tags from text content
-    const fullText = `${scrapedTitle || ''} ${scrapedDescription || ''} ${domain}`;
-    const generatedTags = this.generateMindTags(fullText, domain);
-
-    const finalTitle = scrapedTitle || `Visual Card from ${domain}`;
+    // For videos/reels: user specified "no need for title.!"
+    let finalTitle = detectedType === 'video' ? '' : (scrapedTitle || `Visual Card from ${domain}`);
     const finalDescription = scrapedDescription || input;
     const finalImage = scrapedImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
 
+    // Combine server LLM tags with fallback tags
+    const fallbackTags = this.generateMindTags(`${finalTitle} ${finalDescription} ${domain}`, domain);
+    const finalTags = serverTags.length > 0 ? serverTags : fallbackTags;
+
     return {
-      type: 'image',
+      type: detectedType,
       title: finalTitle,
       content: finalDescription,
       imageUrl: finalImage,
-      tags: generatedTags,
-      contextSpace: generatedTags[0] || 'Idea',
+      tags: finalTags,
+      contextSpace: finalTags[0] || (detectedType === 'video' ? 'Video' : 'Visual'),
       urlMetadata: {
         url: cleanUrl,
         domain,
+        author: scrapedAuthor || undefined,
         siteName: domain,
         fullText: `${finalTitle}\n\n${finalDescription}`,
       },
-      aspectRatio: 1.1,
+      aspectRatio: detectedType === 'video' ? 1.35 : 1.1,
     };
   }
 
   /**
-   * Generates specific Mind Tags based on topic analysis
+   * Generates specific Mind Tags based on hashtags and topic analysis
    */
   private static generateMindTags(text: string, domain: string): string[] {
-    const lower = text.toLowerCase();
     const tags = new Set<string>();
 
-    if (lower.includes('knight') || lower.includes('armor') || lower.includes('warrior')) tags.add('fantasy warrior');
-    if (lower.includes('art') || lower.includes('render') || lower.includes('3d')) tags.add('digital art');
-    if (lower.includes('dark') || lower.includes('hood') || lower.includes('souls')) tags.add('dark souls');
-    if (lower.includes('concept') || lower.includes('design')) tags.add('concept art');
-    if (lower.includes('character')) tags.add('character design');
-    if (lower.includes('render')) tags.add('3D render');
+    // 1. Extract explicit #hashtags from Instagram/social caption
+    const hashMatches = text.match(/#([\w\d_-]+)/g);
+    if (hashMatches) {
+      for (const h of hashMatches) {
+        const cleanTag = h.replace('#', '').trim();
+        if (cleanTag.length >= 2 && cleanTag.length <= 25) {
+          tags.add(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
+        }
+      }
+    }
+
+    // 2. Keyword Topic Taxonomy
+    const lower = text.toLowerCase();
+    if (lower.includes('instagram')) tags.add('Instagram');
+    if (lower.includes('reel')) tags.add('Reel');
+    if (lower.includes('youtube') || lower.includes('video')) tags.add('Video');
+    if (lower.includes('knight') || lower.includes('armor') || lower.includes('warrior')) tags.add('Fantasy Warrior');
+    if (lower.includes('art') || lower.includes('render') || lower.includes('3d')) tags.add('Digital Art');
+    if (lower.includes('concept') || lower.includes('design')) tags.add('Design');
+    if (lower.includes('school') || lower.includes('education')) tags.add('Education');
     if (lower.includes('pricing') || lower.includes('paywall')) tags.add('Pricing');
     if (lower.includes('revenuecat') || lower.includes('subscription')) tags.add('RevenueCat');
 
     if (tags.size === 0) {
-      tags.add(domain.split('.')[0]);
+      const baseDomain = domain.split('.')[0];
+      tags.add(baseDomain.charAt(0).toUpperCase() + baseDomain.slice(1));
       tags.add('VisualCard');
-      tags.add('Design');
     }
 
     return Array.from(tags).slice(0, 6);

@@ -7,6 +7,7 @@ import { copyAsync, cacheDirectory } from 'expo-file-system/legacy';
  */
 export class ShareIntentService {
   private static lastProcessedUrl: string | null = null;
+  private static lastProcessedTime: number = 0;
 
   /**
    * Safely parses deep link URLs into structured shared content
@@ -16,7 +17,7 @@ export class ShareIntentService {
       if (!url) return { type: null, data: null };
 
       if (url.includes('sharedImage=')) {
-        const raw = url.split('sharedImage=')[1]?.split('&')[0];
+        const raw = url.substring(url.indexOf('sharedImage=') + 12);
         if (raw) {
           let decoded = raw;
           try {
@@ -29,7 +30,7 @@ export class ShareIntentService {
       }
 
       if (url.includes('sharedText=')) {
-        const raw = url.split('sharedText=')[1]?.split('&')[0];
+        const raw = url.substring(url.indexOf('sharedText=') + 11);
         if (raw) {
           let decoded = raw;
           try {
@@ -63,11 +64,19 @@ export class ShareIntentService {
   static async getSharedContent(): Promise<{ type: 'text' | 'image' | null; data: string | null }> {
     try {
       const initialUrl = await Linking.getInitialURL();
+      const now = Date.now();
 
-      if (!initialUrl || initialUrl === this.lastProcessedUrl) {
+      if (!initialUrl) {
         return { type: null, data: null };
       }
+
+      // Only ignore if the exact same URL was processed in the last 1.2 seconds
+      if (initialUrl === this.lastProcessedUrl && now - this.lastProcessedTime < 1200) {
+        return { type: null, data: null };
+      }
+
       this.lastProcessedUrl = initialUrl;
+      this.lastProcessedTime = now;
 
       return this.parseUrl(initialUrl);
     } catch (error) {
@@ -100,8 +109,16 @@ export class ShareIntentService {
    */
   static addListener(callback: (type: 'text' | 'image', data: string) => void): () => void {
     const subscription = Linking.addEventListener('url', (event) => {
-      if (!event.url || event.url === this.lastProcessedUrl) return;
+      const now = Date.now();
+      if (!event.url) return;
+
+      // Only ignore if identical event received within 1.2s (prevents rapid double-trigger)
+      if (event.url === this.lastProcessedUrl && now - this.lastProcessedTime < 1200) {
+        return;
+      }
+
       this.lastProcessedUrl = event.url;
+      this.lastProcessedTime = now;
 
       const parsed = this.parseUrl(event.url);
       if (parsed.type && parsed.data) {

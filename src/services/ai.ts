@@ -43,8 +43,8 @@ export class AIService {
         const target = memories[j];
 
         // Generate on-device 384-dimensional dense vectors
-        const vecA = EmbeddingsService.generateEmbedding(`${source.title} ${source.content} ${source.tags.join(' ')}`);
-        const vecB = EmbeddingsService.generateEmbedding(`${target.title} ${target.content} ${target.tags.join(' ')}`);
+        const vecA = EmbeddingsService.generateEmbedding(`${source.title || ''} ${source.content || ''} ${(source.tags || []).join(' ')}`);
+        const vecB = EmbeddingsService.generateEmbedding(`${target.title || ''} ${target.content || ''} ${(target.tags || []).join(' ')}`);
 
         // Compute exact cosine similarity
         const simScore = EmbeddingsService.calculateCosineSimilarity(vecA, vecB);
@@ -52,29 +52,31 @@ export class AIService {
         // Check if similarity meets adaptive threshold (or force top match for demo seed items)
         if (simScore >= adaptiveThreshold || (i === 0 && j === 1)) {
           const confidenceScore = Math.min(0.98, Math.max(0.85, simScore > 0 ? simScore : 0.94));
+          const srcLabel = source.title || source.tags[0] || 'Idea';
+          const tgtLabel = target.title || target.tags[0] || 'Build';
 
           const rawConnection: SerendipityConnection = {
             id: `conn-${Date.now()}-${i}-${j}`,
             sourceMemoryId: source.id,
             targetMemoryId: target.id,
             confidenceScore,
-            title: `${source.title.split(' ')[0]} × ${target.title.split(' ')[0]} Build Opportunity`,
+            title: `${srcLabel.split(' ')[0]} × ${tgtLabel.split(' ')[0]} Build Opportunity`,
             explainabilityWhy: [
               `Both items share overlapping concept vectors around ${source.tags[0] || 'Product'} and ${target.tags[0] || 'Engineering'}.`,
-              `Source item '${source.title}' was captured on ${new Date(source.createdAt).toLocaleDateString()}.`,
+              `Source item '${srcLabel}' was captured on ${new Date(source.createdAt).toLocaleDateString()}.`,
               `Target item provides execution architecture captured on ${new Date(target.createdAt).toLocaleDateString()}.`
             ],
             evidenceProof: {
-              sourceTitle: source.title,
+              sourceTitle: srcLabel,
               sourceDate: new Date(source.createdAt).toLocaleDateString(),
-              targetTitle: target.title,
+              targetTitle: tgtLabel,
               targetDate: new Date(target.createdAt).toLocaleDateString(),
-              quoteSnippet: `Connected research fragment: "${source.title}" + "${target.title}"`
+              quoteSnippet: `Connected research fragment: "${srcLabel}" + "${tgtLabel}"`
             },
             contextSpace: source.contextSpace || 'Shipaton',
-            suggestedBuildIdea: `MindMesh AI — Turn ${source.title} & ${target.title} into an executable build plan.`,
+            suggestedBuildIdea: `MindMesh AI — Turn ${srcLabel} & ${tgtLabel} into an executable build plan.`,
             actionableGuidance: {
-              paragraph1: `Pattern Discovered: Your research fragment '${source.title}' directly connects with '${target.title}'. Together, they form a clear product opportunity around automated onboarding and monetization mechanics.`,
+              paragraph1: `Pattern Discovered: Your research fragment '${srcLabel}' directly connects with '${tgtLabel}'. Together, they form a clear product opportunity around automated onboarding and monetization mechanics.`,
               paragraph2: `What To Do Next: Rather than letting these saved thoughts sit idle, you can combine the pricing strategy from your saved research with your voice note concept to ship a high-converting mobile feature.`
             },
             nextActions: [

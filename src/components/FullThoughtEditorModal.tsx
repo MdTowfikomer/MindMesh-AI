@@ -21,14 +21,21 @@ export const FullThoughtEditorModal: React.FC<FullThoughtEditorModalProps> = ({ 
     day: 'numeric',
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!text.trim()) return;
 
-    const enriched = URLEnrichmentService.enrichInput(text.trim());
-    addMemory(enriched);
-
+    const trimmed = text.trim();
     setText('');
     onClose();
+
+    if (/^https?:\/\//i.test(trimmed)) {
+      const enriched = await URLEnrichmentService.enrichUrlAsync(trimmed);
+      addMemory(enriched);
+    } else {
+      const enriched = URLEnrichmentService.enrichInput(trimmed);
+      addMemory(enriched);
+    }
+
     triggerSynapticFusion();
   };
 

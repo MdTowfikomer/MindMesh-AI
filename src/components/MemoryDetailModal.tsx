@@ -9,6 +9,7 @@ import {
   ScrollView,
   Image,
   Share,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -22,10 +23,14 @@ import {
   FileText,
   Mic,
   MoreHorizontal,
+  Play,
+  Globe,
+  ArrowRight,
 } from './Icons';
 import { MemoryItem } from '../types/mindmesh';
 import { useMemoryStore } from '../stores/memoryStore';
 import { SoundEffects } from '../services/soundEffects';
+import { CyberTheme } from '../theme/cyberLuxury';
 import { AddTagModal } from './AddTagModal';
 
 export const MemoryDetailModal: React.FC = () => {
@@ -111,7 +116,7 @@ export const MemoryDetailModal: React.FC = () => {
           </TouchableOpacity>
 
           <Text style={styles.headerTitle} numberOfLines={1}>
-            {selectedMemory.title || 'Untitled'}
+            {selectedMemory.title || selectedMemory.urlMetadata?.domain || 'Saved Memory'}
           </Text>
 
           <TouchableOpacity style={styles.headerIconButton}>
@@ -138,6 +143,47 @@ export const MemoryDetailModal: React.FC = () => {
                 <Text style={styles.voiceMetaText}>🎙️ {selectedMemory.audioDuration} Voice Memo</Text>
               ) : null}
             </View>
+          )}
+
+          {/* Clickable Action Banner for Videos / Shared URLs (Instagram, YouTube, Web) */}
+          {selectedMemory.urlMetadata?.url && (
+            <TouchableOpacity
+              style={styles.watchVideoBtn}
+              activeOpacity={0.85}
+              onPress={() => {
+                CyberTheme.haptics.medium();
+                Linking.openURL(selectedMemory.urlMetadata!.url);
+              }}
+            >
+              <View style={styles.watchVideoIconCircle}>
+                {selectedMemory.type === 'video' ||
+                selectedMemory.urlMetadata.url.includes('instagram.com') ||
+                selectedMemory.urlMetadata.url.includes('youtube.com') ||
+                selectedMemory.urlMetadata.url.includes('youtu.be') ? (
+                  <Play size={14} color="#FFF" />
+                ) : (
+                  <Globe size={14} color="#FFF" />
+                )}
+              </View>
+              <View style={styles.watchVideoTextCol}>
+                <Text style={styles.watchVideoTitle} numberOfLines={1}>
+                  {selectedMemory.urlMetadata.url.includes('instagram.com')
+                    ? 'Watch Reel on Instagram'
+                    : selectedMemory.urlMetadata.url.includes('youtube.com') ||
+                      selectedMemory.urlMetadata.url.includes('youtu.be')
+                    ? 'Watch Video on YouTube'
+                    : selectedMemory.type === 'video'
+                    ? 'Watch Video'
+                    : 'Open Original Web Link'}
+                </Text>
+                <Text style={styles.watchVideoSub} numberOfLines={1}>
+                  {selectedMemory.urlMetadata.domain || selectedMemory.urlMetadata.url}
+                </Text>
+              </View>
+              <View style={styles.watchVideoArrowPill}>
+                <ArrowRight size={14} color="#CBD5E1" />
+              </View>
+            </TouchableOpacity>
           )}
 
           {/* MIND TAGS Section */}
@@ -411,6 +457,46 @@ const styles = StyleSheet.create({
   directoryChipTextActive: {
     color: '#101114',
     fontWeight: '600',
+  },
+  watchVideoBtn: {
+    backgroundColor: '#181A20',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  watchVideoIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#3B82F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  watchVideoTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  watchVideoTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#F8FAFC',
+  },
+  watchVideoSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+  },
+  watchVideoArrowPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   bottomDock: {
     paddingHorizontal: 16,

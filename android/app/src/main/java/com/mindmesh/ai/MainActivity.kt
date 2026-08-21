@@ -29,15 +29,15 @@ class MainActivity : ReactActivity() {
   }
 
   override fun onNewIntent(intent: Intent) {
+    handleSendIntent(intent)
     super.onNewIntent(intent)
     setIntent(intent)
-    handleSendIntent(intent)
   }
 
   private fun handleSendIntent(intent: Intent?) {
     if (intent == null) return
     val action = intent.action ?: return
-    val type = intent.type ?: return
+    val type = intent.type ?: ""
 
     Log.d(TAG, "Incoming intent action: $action, type: $type")
 
@@ -73,7 +73,7 @@ class MainActivity : ReactActivity() {
       }
 
       // 3. Try intent.data fallback
-      if (imageUri == null && intent.data != null && type.startsWith("image/")) {
+      if (imageUri == null && intent.data != null && (type.startsWith("image/") || intent.data.toString().contains(".jpg") || intent.data.toString().contains(".png"))) {
         imageUri = intent.data
         Log.d(TAG, "Found URI in intent.data: $imageUri")
       }
@@ -91,9 +91,20 @@ class MainActivity : ReactActivity() {
         return
       }
 
-      // 4. Try Text / Link sharing
-      val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-      if (sharedText != null) {
+      // 4. Try Text / Link sharing (Instagram Reel, YouTube, Twitter/X, Web)
+      var sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+      if (sharedText == null) {
+        sharedText = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+      }
+      if (sharedText == null && clipData != null && clipData.itemCount > 0) {
+        sharedText = clipData.getItemAt(0).text?.toString()
+      }
+      if (sharedText == null && intent.data != null) {
+        sharedText = intent.data.toString()
+      }
+
+      if (!sharedText.isNullOrBlank()) {
+        Log.d(TAG, "Final shared text for React Native: $sharedText")
         val deepLinkUri = Uri.parse("mindmesh://feed?sharedText=${Uri.encode(sharedText)}")
         intent.action = Intent.ACTION_VIEW
         intent.data = deepLinkUri

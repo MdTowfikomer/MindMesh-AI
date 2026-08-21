@@ -59,6 +59,7 @@ export default function FeedScreen() {
   useEffect(() => {
     const handleSharedContent = async (data: string, type: 'text' | 'image') => {
       console.log('[FeedScreen] 📥 Incoming shared content:', { type, data: data.slice(0, 100) });
+      RemoteLogger.info(`📥 Inbound Android Share Intent: ${type}`, { raw: data.slice(0, 300) }, 'ShareIntentReceiver');
       setIsSaving(true);
       try {
         if (type === 'image') {

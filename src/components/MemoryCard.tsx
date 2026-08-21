@@ -98,13 +98,20 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
     );
   }
 
-  // ─── Image & Screenshot Card ───────────────────────────────────────────────
+  // ─── Image & Video / Screenshot Card ──────────────────────────────────────
   if (memory.imageUrl) {
+    const isVideoCard =
+      memory.type === 'video' ||
+      memory.type === 'gif' ||
+      memory.urlMetadata?.url?.includes('/reel/') ||
+      memory.urlMetadata?.url?.includes('youtube.com') ||
+      memory.urlMetadata?.url?.includes('youtu.be');
+
     return (
       <TouchableOpacity style={styles.cardContainer} onPress={onPress} activeOpacity={0.88}>
         <View style={[styles.imageBox, { height: imageHeight }]}>
           <Image source={{ uri: memory.imageUrl }} style={styles.image} resizeMode="cover" />
-          {memory.type === 'video' || memory.type === 'gif' ? (
+          {isVideoCard ? (
             <View style={styles.playOverlay}>
               <View style={styles.playCircle}>
                 <Play size={12} color="#FFF" />
@@ -112,9 +119,11 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
             </View>
           ) : null}
         </View>
-        <Text style={styles.captionTitle} numberOfLines={2}>
-          {memory.title || 'Untitled Image'}
-        </Text>
+        {memory.title ? (
+          <Text style={styles.captionTitle} numberOfLines={2}>
+            {memory.title}
+          </Text>
+        ) : null}
       </TouchableOpacity>
     );
   }
