@@ -177,7 +177,7 @@ export class URLEnrichmentService {
         siteName: domain,
         fullText: `${finalTitle}\n\n${finalDescription}`,
       },
-      aspectRatio: detectedType === 'video' ? 1.35 : 1.1,
+      aspectRatio: domain.includes('instagram.com') ? 1.4 : (detectedType === 'video' ? 1.35 : 1.1),
     };
   }
 

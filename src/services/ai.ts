@@ -6,9 +6,20 @@ export class AIService {
   private static readonly SERVER_PROXY_URL = 'https://mindmesh-api.vercel.app';
 
   /**
-   * Calls Vercel backend proxy for server-side Gemini AI generation
+   * Calls Gemini AI generation (Direct on-device BYOK or central Vercel proxy fallback)
    */
   public static async callBackendProxy(prompt: string): Promise<string | null> {
+    try {
+      const { ByokService } = await import('./byokService');
+      const hasCustom = await ByokService.hasCustomKey();
+      if (hasCustom) {
+        const text = await ByokService.executeGemini([{ parts: [{ text: prompt }] }]);
+        if (text) return text;
+      }
+    } catch (e) {
+      console.log('[AIService] BYOK call error, falling back to proxy:', e);
+    }
+
     try {
       const response = await fetch(`${this.SERVER_PROXY_URL}/api/v1/ai/generate`, {
         method: 'POST',

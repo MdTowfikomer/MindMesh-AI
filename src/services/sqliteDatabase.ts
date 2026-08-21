@@ -66,9 +66,52 @@ export const SQLiteDatabaseService = {
         );
       `);
 
+      // Create Settings Table (BYOK, custom keys, user preferences)
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS settings (
+          key TEXT PRIMARY KEY NOT NULL,
+          value TEXT NOT NULL
+        );
+      `);
+
       console.log('[SQLiteDatabaseService] Database tables initialized successfully.');
     } catch (error) {
       console.error('[SQLiteDatabaseService] Failed to initialize SQLite database:', error);
+    }
+  },
+
+  async getSetting(key: string): Promise<string | null> {
+    try {
+      const db = await this.getDb();
+      const row = await db.getFirstAsync<{ value: string }>(
+        'SELECT value FROM settings WHERE key = ?',
+        [key]
+      );
+      return row?.value || null;
+    } catch (error) {
+      console.error(`[SQLiteDatabaseService] Error reading setting ${key}:`, error);
+      return null;
+    }
+  },
+
+  async saveSetting(key: string, value: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      await db.runAsync(
+        'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+        [key, value]
+      );
+    } catch (error) {
+      console.error(`[SQLiteDatabaseService] Error saving setting ${key}:`, error);
+    }
+  },
+
+  async deleteSetting(key: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      await db.runAsync('DELETE FROM settings WHERE key = ?', [key]);
+    } catch (error) {
+      console.error(`[SQLiteDatabaseService] Error deleting setting ${key}:`, error);
     }
   },
 

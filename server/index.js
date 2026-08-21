@@ -245,6 +245,40 @@ app.post('/api/v1/enrich-url', async (req, res) => {
       }
     }
 
+    // 0. Dedicated X / Twitter Resolver (api.fxtwitter.com for high-res cards, banners & videos)
+    if (isTwitter) {
+      try {
+        const fxUrl = url.replace(/https?:\/\/(www\.)?(x|twitter)\.com/i, 'https://api.fxtwitter.com');
+        console.log(`[MindMesh Server] 🐦 Resolving X/Twitter post via: ${fxUrl}`);
+        const fxRes = await fetch(fxUrl, { headers: { 'User-Agent': 'MindMesh/1.0' } });
+        if (fxRes.ok) {
+          const fxJson = await fxRes.json();
+          if (fxJson.code === 200 && fxJson.tweet) {
+            const tw = fxJson.tweet;
+            const mediaItem = tw.media?.photos?.[0] || tw.media?.videos?.[0] || tw.media?.all?.[0];
+            const imgUrl = mediaItem?.url || tw.author?.avatar_url;
+            const caption = tw.text || tw.raw_text?.text || '';
+            const aiTags = await generateAITags(caption, 'x.com');
+
+            console.log(`[MindMesh Server] ✨ Enriched X/Twitter: "${caption.slice(0, 60)}..." | Image: ${Boolean(imgUrl)} | Tags: [${aiTags.join(', ')}]`);
+            return res.json({
+              success: true,
+              blocked: false,
+              imageUrl: imgUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+              title: '',
+              description: caption,
+              author: tw.author?.name ? `${tw.author.name} (@${tw.author.screen_name})` : 'X Post',
+              mediaType: mediaItem?.type === 'video' ? 'video' : 'image',
+              tags: aiTags.length > 0 ? aiTags : ['X', 'Social'],
+              domain: 'x.com',
+            });
+          }
+        }
+      } catch (twErr) {
+        console.warn('[MindMesh Server] FxTwitter error, falling back to Microlink:', twErr.message);
+      }
+    }
+
     // 2. Headless Browser Scraper (Instagram, TikTok, Twitter, Dynamic JS Webpages)
     if (isInstagram || isTikTok || isTwitter) {
       try {

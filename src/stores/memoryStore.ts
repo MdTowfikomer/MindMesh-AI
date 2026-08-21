@@ -63,6 +63,15 @@ interface MemoryStoreState {
   unlockProAccess: () => void;
   toggleNextAction: (connectionId: string, actionText: string) => void;
   loadStoredMemories: () => Promise<void>;
+  isSettingsModalVisible: boolean;
+  openSettingsModal: () => void;
+  closeSettingsModal: () => void;
+  isByokPromptVisible: boolean;
+  openByokPrompt: () => void;
+  closeByokPrompt: () => void;
+  triggerByokPromptIfNeeded: () => Promise<void>;
+  byokConfig: import('../services/byokService').BYOKConfig;
+  setByokConfig: (config: import('../services/byokService').BYOKConfig) => void;
   isSaving: boolean;
   setIsSaving: (saving: boolean) => void;
   toastMessage: string | null;
@@ -83,6 +92,33 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   setIsSaving: (saving: boolean) => set({ isSaving: saving }),
   toastMessage: null,
   toastType: null,
+  isSettingsModalVisible: false,
+  openSettingsModal: () => set({ isSettingsModalVisible: true }),
+  closeSettingsModal: () => set({ isSettingsModalVisible: false }),
+  isByokPromptVisible: false,
+  openByokPrompt: () => set({ isByokPromptVisible: true }),
+  closeByokPrompt: () => set({ isByokPromptVisible: false }),
+  triggerByokPromptIfNeeded: async () => {
+    try {
+      const { ByokService } = await import('../services/byokService');
+      const hasCustom = await ByokService.hasCustomKey();
+      if (hasCustom) return;
+
+      const { SQLiteDatabaseService } = await import('../services/sqliteDatabase');
+      const dismissed = await SQLiteDatabaseService.getSetting('byok_prompt_dont_show_again');
+      if (dismissed === 'true') return;
+
+      set({ isByokPromptVisible: true });
+    } catch (e) {
+      console.warn('[MemoryStore] triggerByokPrompt error:', e);
+    }
+  },
+  byokConfig: {
+    apiKey: null,
+    model: 'gemini-3.5-flash',
+    isVerified: false,
+  },
+  setByokConfig: (config) => set({ byokConfig: config }),
 
   showToast: (message: string, type: 'success' | 'error' = 'success', durationMs = 3500) => {
     if (toastTimer) clearTimeout(toastTimer);
@@ -102,6 +138,11 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
       await SQLiteDatabaseService.initDatabase();
       const sqliteMemories = await SQLiteDatabaseService.getAllMemories();
       const sqliteBuildPlan = await SQLiteDatabaseService.getLatestBuildPlan();
+
+      // Load BYOK configuration
+      const { ByokService } = await import('../services/byokService');
+      const byok = await ByokService.loadConfig();
+      set({ byokConfig: byok });
 
       if (sqliteMemories.length > 0) {
         set({ memories: sqliteMemories });
@@ -374,7 +415,7 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
     }));
   },
 
-  toggleNextAction: (connectionId, actionText) => {
+  toggleNextAction: (connectionId: string, actionText: string) => {
     set((state) => {
       const updatedConnections = state.connections.map((conn) => {
         if (conn.id === connectionId) {

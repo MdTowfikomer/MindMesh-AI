@@ -17,7 +17,9 @@ import { MemoryDetailModal } from '../../src/components/MemoryDetailModal';
 import { SavingSkeletonCard } from '../../src/components/SavingSkeletonCard';
 import { SpotlightCommandPalette } from '../../src/components/SpotlightCommandPalette';
 import { CyberTheme } from '../../src/theme/cyberLuxury';
-import { Search, Sparkles, CheckCircle2, AlertCircle } from '../../src/components/Icons';
+import { Search, Sparkles, CheckCircle2, AlertCircle, Settings } from '../../src/components/Icons';
+import { SettingsModal } from '../../src/components/SettingsModal';
+import { ByokPromptModal } from '../../src/components/ByokPromptModal';
 import { RemoteLogger } from '../../src/services/logger';
 
 export default function FeedScreen() {
@@ -46,6 +48,7 @@ export default function FeedScreen() {
     createSmartSpace,
     deleteSmartSpace,
     openMemoryDetail,
+    openSettingsModal,
     addMemory,
     triggerSynapticFusion,
     isSaving,
@@ -89,13 +92,25 @@ export default function FeedScreen() {
             confidenceScore: visionResult.confidenceScore,
           });
           triggerSynapticFusion();
-          showToast(`✨ AI analyzed screenshot & added ${visionResult.tags.length} smart tags!`, 'success');
+          const { ByokService } = await import('../../src/services/byokService');
+          const hasKey = await ByokService.hasCustomKey();
+          if (!hasKey) {
+            useMemoryStore.getState().triggerByokPromptIfNeeded();
+          } else {
+            showToast(`✨ BYOK AI analyzed screenshot & added ${visionResult.tags.length} smart tags!`, 'success');
+          }
         } else {
           // Text/URL — enrich with scraper
           const enriched = await URLEnrichmentService.enrichUrlAsync(data);
           addMemory(enriched);
           triggerSynapticFusion();
-          showToast('✨ Saved visual post card from shared link!', 'success');
+          const { ByokService } = await import('../../src/services/byokService');
+          const hasKey = await ByokService.hasCustomKey();
+          if (!hasKey) {
+            useMemoryStore.getState().triggerByokPromptIfNeeded();
+          } else {
+            showToast('✨ Saved visual post card from shared link!', 'success');
+          }
         }
       } catch (e: any) {
         console.error('[FeedScreen] Share intent handling error:', e);
@@ -174,9 +189,19 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Clean Screen Title */}
+      {/* Clean Screen Title & Settings Header */}
       <View style={styles.headerTitleRow}>
         <Text style={styles.screenTitle}>Memory Feed</Text>
+        <TouchableOpacity
+          style={styles.settingsHeaderBtn}
+          activeOpacity={0.75}
+          onPress={() => {
+            CyberTheme.haptics.light();
+            openSettingsModal();
+          }}
+        >
+          <Settings size={18} color="#94A3B8" />
+        </TouchableOpacity>
       </View>
 
       {/* 21st.dev Style Spotlight Search Bar Trigger */}
@@ -278,9 +303,16 @@ export default function FeedScreen() {
         onReceiveContent={handleInboundShareReceive}
       />
 
-      {/* Toast Notification Banner (Message Sandwich) */}
+      {/* Toast Notification Banner (Tap to open Settings if prompt) */}
       {toastMessage && (
-        <View
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => {
+            if (toastMessage.includes('Settings') || toastMessage.includes('key') || toastMessage.includes('BYOK')) {
+              CyberTheme.haptics.light();
+              openSettingsModal();
+            }
+          }}
           style={[
             styles.toastBanner,
             toastType === 'error' && styles.toastBannerError,
@@ -299,7 +331,7 @@ export default function FeedScreen() {
           >
             {toastMessage}
           </Text>
-        </View>
+        </TouchableOpacity>
       )}
 
       {/* Spotlight Command Palette (21st.dev Style) */}
@@ -310,8 +342,10 @@ export default function FeedScreen() {
         onSelectMemory={handleCardPress}
       />
 
-      {/* Floating Capture Bar */}
+      {/* Floating Capture Bar & Modals */}
       <MemoryDetailModal />
+      <SettingsModal />
+      <ByokPromptModal />
       <CaptureBar />
     </SafeAreaView>
   );
@@ -323,6 +357,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#101114',
   },
   headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 4,
@@ -332,6 +369,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#F8FAFC',
     letterSpacing: -0.3,
+  },
+  settingsHeaderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
   toastBanner: {
     position: 'absolute',

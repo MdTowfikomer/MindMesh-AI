@@ -214,3 +214,23 @@ export const MoreHorizontal: React.FC<IconProps> = ({ size = 18, color = '#FFF',
 export const ChevronUp: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
   <Feather name="chevron-up" size={size} color={color} style={style} />
 );
+
+export const Settings: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="settings" size={size} color={color} style={style} />
+);
+
+export const Key: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="key" size={size} color={color} style={style} />
+);
+
+export const Eye: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="eye" size={size} color={color} style={style} />
+);
+
+export const EyeOff: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="eye-off" size={size} color={color} style={style} />
+);
+
+export const Cpu: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="cpu" size={size} color={color} style={style} />
+);

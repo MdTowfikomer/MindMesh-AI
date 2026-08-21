@@ -26,6 +26,7 @@ import {
   Play,
   Globe,
   ArrowRight,
+  Sparkles,
 } from './Icons';
 import { MemoryItem } from '../types/mindmesh';
 import { useMemoryStore } from '../stores/memoryStore';
@@ -47,12 +48,28 @@ export const MemoryDetailModal: React.FC = () => {
   const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [isSelectingDirectory, setIsSelectingDirectory] = useState(false);
+  const [imageRatio, setImageRatio] = useState<number | null>(null);
 
   const availableDirectories = ['Shipathon', 'Pricing', 'Notes', 'Visuals', 'Startup Ideas', 'Personal'];
 
   useEffect(() => {
     if (selectedMemory) {
       setNoteText(selectedMemory.personalNote || '');
+    }
+    if (selectedMemory?.imageUrl) {
+      Image.getSize(
+        selectedMemory.imageUrl,
+        (width, height) => {
+          if (width > 0 && height > 0) {
+            setImageRatio(width / height);
+          }
+        },
+        () => {
+          setImageRatio(null);
+        }
+      );
+    } else {
+      setImageRatio(null);
     }
   }, [selectedMemory]);
 
@@ -131,8 +148,19 @@ export const MemoryDetailModal: React.FC = () => {
         >
           {/* Main Hero Card Canvas */}
           {selectedMemory.imageUrl ? (
-            <View style={styles.heroImageBox}>
-              <Image source={{ uri: selectedMemory.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+            <View
+              style={[
+                styles.heroImageBox,
+                imageRatio
+                  ? { aspectRatio: Math.max(0.5, Math.min(1.9, imageRatio)) }
+                  : { height: 340 },
+              ]}
+            >
+              <Image
+                source={{ uri: selectedMemory.imageUrl }}
+                style={styles.heroImage}
+                resizeMode="contain"
+              />
             </View>
           ) : (
             <View style={styles.heroTextBox}>
@@ -185,6 +213,16 @@ export const MemoryDetailModal: React.FC = () => {
               </View>
             </TouchableOpacity>
           )}
+
+          {/* TLDR / AI Summary Section */}
+          {selectedMemory.content && selectedMemory.imageUrl ? (
+            <View style={styles.tldrCard}>
+              <Text style={styles.tldrSectionLabel}>TLDR</Text>
+              <Text style={styles.tldrText}>
+                {selectedMemory.content}
+              </Text>
+            </View>
+          ) : null}
 
           {/* MIND TAGS Section */}
           <View style={styles.section}>
@@ -333,14 +371,38 @@ const styles = StyleSheet.create({
   },
   heroImageBox: {
     width: '100%',
-    height: 280,
-    borderRadius: 14,
+    maxHeight: 520,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#181A20',
+    backgroundColor: '#000000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   heroImage: {
     width: '100%',
     height: '100%',
+    alignSelf: 'center',
+  },
+  tldrCard: {
+    backgroundColor: '#181A20',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 6,
+  },
+  tldrSectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.5,
+  },
+  tldrText: {
+    fontSize: 14,
+    color: '#F8FAFC',
+    lineHeight: 22,
+    fontWeight: '400',
   },
   heroTextBox: {
     backgroundColor: '#181A20',

@@ -49,9 +49,72 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
       });
 
       const mimeType = this.getMimeType(imageUri);
+
+      // ─── Stage 1: BYOK (Bring Your Own Key) Direct On-Device Execution ───
+      const { ByokService } = await import('./byokService');
+      const hasCustom = await ByokService.hasCustomKey();
+      if (hasCustom) {
+        const config = await ByokService.loadConfig();
+        const customModel = config.model || 'gemini-3.5-flash';
+        console.log(`[VisionAI] 🚀 Executing direct on-device Gemini call with User BYOK Key (${customModel})`);
+        RemoteLogger.info("🔑 Executing Vision AI request with User's BYOK Gemini API Key", {
+          model: customModel,
+          keyPrefix: config.apiKey ? config.apiKey.slice(0, 8) + '...' : '',
+          imageSizeKb: Math.round(base64.length / 1024),
+        }, 'VisionAI-BYOK');
+
+        try {
+          const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/${customModel}:generateContent?key=${config.apiKey}`;
+          const directRes = await fetch(directUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    { text: this.PROMPT },
+                    {
+                      inlineData: {
+                        mimeType,
+                        data: base64,
+                      },
+                    },
+                  ],
+                },
+              ],
+              generationConfig: {
+                temperature: 0.2,
+                responseMimeType: 'application/json',
+              },
+            }),
+          });
+
+          if (directRes.ok) {
+            const directJson = await directRes.json();
+            const text = directJson.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (text) {
+              console.log(`[VisionAI] ✅ Direct BYOK Gemini Success (${customModel})`);
+              RemoteLogger.info("✅ BYOK Gemini Vision analysis completed successfully", { model: customModel }, 'VisionAI-BYOK');
+              return this.parseResponse(text);
+            }
+          } else {
+            console.warn(`[VisionAI] BYOK direct call returned HTTP ${directRes.status}, falling back to proxy`);
+            RemoteLogger.warn(`BYOK direct call returned HTTP ${directRes.status}, falling back to developer default key`, { status: directRes.status }, 'VisionAI-BYOK');
+          }
+        } catch (byokErr: any) {
+          console.warn('[VisionAI] BYOK direct call error, falling back to proxy:', byokErr);
+          RemoteLogger.warn('BYOK direct call failed, falling back to developer default key', { error: byokErr?.message }, 'VisionAI-BYOK');
+        }
+      }
+
+      // ─── Stage 2: Central Developer / System Default Proxy Fallback ───
       const url = `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.VISION_ENDPOINT}`;
 
-      console.log(`[VisionAI] 📤 Sending image to proxy (Size: ${Math.round(base64.length / 1024)} KB, MIME: ${mimeType})`);
+      console.log(`[VisionAI] ⚡ Executing image analysis with Developer's Default System Key (Vercel Proxy) (Size: ${Math.round(base64.length / 1024)} KB)`);
+      RemoteLogger.info("⚡ Executing Vision AI request with Developer's Default System Key (Vercel Proxy)", {
+        endpoint: url,
+        imageSizeKb: Math.round(base64.length / 1024),
+      }, 'VisionAI-DefaultProxy');
 
       const response = await fetch(url, {
         method: 'POST',

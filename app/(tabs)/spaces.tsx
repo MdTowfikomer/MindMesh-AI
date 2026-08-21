@@ -4,7 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMemoryStore } from '../../src/stores/memoryStore';
 import { MemoryItem } from '../../src/types/mindmesh';
 import { theme } from '../../src/theme/tokens';
-import { Plus, X, Folder, Trash2 } from '../../src/components/Icons';
+import { Plus, X, Folder, Trash2, Settings } from '../../src/components/Icons';
+import { SettingsModal } from '../../src/components/SettingsModal';
+import { ByokPromptModal } from '../../src/components/ByokPromptModal';
+import { CyberTheme } from '../../src/theme/cyberLuxury';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -17,7 +20,7 @@ interface SpaceCollection {
 }
 
 export default function SpacesScreen() {
-  const { memories, savedSmartSpaces, createSmartSpace, deleteSmartSpace, deleteMemory } = useMemoryStore();
+  const { memories, savedSmartSpaces, createSmartSpace, deleteSmartSpace, deleteMemory, openSettingsModal } = useMemoryStore();
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
   const [selectedSpace, setSelectedSpace] = useState<SpaceCollection | null>(null);
@@ -197,9 +200,21 @@ export default function SpacesScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Spaces</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setIsCreateModalVisible(true)}>
-          <Plus size={18} color="#FFF" />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            style={styles.settingsHeaderBtn}
+            activeOpacity={0.75}
+            onPress={() => {
+              CyberTheme.haptics.light();
+              openSettingsModal();
+            }}
+          >
+            <Settings size={18} color="#94A3B8" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addBtn} onPress={() => setIsCreateModalVisible(true)}>
+            <Plus size={18} color="#FFF" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -267,6 +282,9 @@ export default function SpacesScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
+
+      <SettingsModal />
+      <ByokPromptModal />
     </SafeAreaView>
   );
 }
@@ -311,13 +329,28 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#F8FAFC',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  settingsHeaderBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
   addBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(0, 242, 254, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderWidth: 1,
-    borderColor: 'rgba(0, 242, 254, 0.4)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -346,70 +379,70 @@ const styles = StyleSheet.create({
     height: 160,
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   spaceName: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '600',
     color: '#F8FAFC',
-    marginTop: 6,
-    paddingHorizontal: 2,
+    marginTop: 8,
+    paddingHorizontal: 4,
   },
   emptyState: {
-    paddingVertical: 80,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    paddingVertical: 60,
+    gap: 8,
   },
   emptyTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#F8FAFC',
+    fontWeight: '600',
+    color: '#94A3B8',
   },
   emptySub: {
     fontSize: 13,
     color: '#64748B',
     textAlign: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
+    lineHeight: 18,
   },
 
   // Detail view
   detailHeader: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    paddingVertical: 14,
     gap: 4,
   },
   detailHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  backBtn: {},
+  backBtn: {
+    paddingVertical: 4,
+  },
   backBtnText: {
-    fontSize: 13,
+    fontSize: 14,
+    color: '#38BDF8',
     fontWeight: '600',
-    color: '#00F2FE',
   },
   deleteDirectoryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(225, 29, 72, 0.12)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
+    gap: 6,
+    backgroundColor: 'rgba(225, 29, 72, 0.1)',
     borderColor: 'rgba(225, 29, 72, 0.3)',
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   deleteDirectoryText: {
     fontSize: 11,
-    fontWeight: '700',
-    color: '#FF007F',
+    color: '#E11D48',
+    fontWeight: '600',
   },
   detailTitle: {
     fontSize: 22,
@@ -417,11 +450,11 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
   },
   detailCount: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#64748B',
   },
   detailGrid: {
-    padding: 10,
+    paddingHorizontal: 10,
     paddingBottom: 40,
   },
   gridRow: {
@@ -431,7 +464,7 @@ const styles = StyleSheet.create({
   },
   detailCard: {
     width: '48%',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   detailCardImage: {
     width: '100%',
@@ -469,23 +502,25 @@ const styles = StyleSheet.create({
   // Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(3, 3, 8, 0.85)',
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   modalContent: {
-    backgroundColor: '#0E1020',
+    backgroundColor: '#16181F',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0, 242, 254, 0.3)',
-    padding: 20,
-    width: '85%',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    padding: 22,
+    width: '100%',
+    maxWidth: 360,
     gap: 14,
-    shadowColor: '#00F2FE',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 12,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -493,9 +528,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 17,
+    fontWeight: '700',
     color: '#F8FAFC',
+    letterSpacing: -0.2,
   },
   modalInput: {
     fontSize: 14,
@@ -505,16 +541,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
   modalHint: {
-    fontSize: 11,
-    color: '#64748B',
-    lineHeight: 15,
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 17,
   },
   createBtn: {
-    backgroundColor: '#00F2FE',
-    paddingVertical: 12,
+    backgroundColor: '#38BDF8',
+    paddingVertical: 13,
     borderRadius: 12,
     alignItems: 'center',
   },

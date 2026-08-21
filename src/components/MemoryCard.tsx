@@ -11,7 +11,23 @@ interface MemoryCardProps {
 }
 
 export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
-  const imageHeight = Math.min(260, Math.max(130, 160 * (memory.aspectRatio || 1.1)));
+  const [aspectRatio, setAspectRatio] = React.useState<number | null>(null);
+
+  React.useEffect(() => {
+    if (memory.imageUrl) {
+      Image.getSize(
+        memory.imageUrl,
+        (width, height) => {
+          if (width > 0 && height > 0) {
+            setAspectRatio(width / height);
+          }
+        },
+        () => {}
+      );
+    }
+  }, [memory.imageUrl]);
+
+  const effectiveRatio = aspectRatio ? Math.max(0.65, Math.min(1.8, aspectRatio)) : (memory.aspectRatio || 1.0);
 
   // ─── Quote Card ────────────────────────────────────────────────────────────
   if (memory.type === 'quote') {
@@ -74,7 +90,7 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
   if (memory.type === 'article') {
     return (
       <TouchableOpacity style={styles.cardContainer} onPress={onPress} activeOpacity={0.88}>
-        <View style={styles.articleBox}>
+        <View style={[styles.articleBox, memory.imageUrl ? { aspectRatio: effectiveRatio, height: undefined } : null]}>
           {memory.imageUrl ? (
             <Image source={{ uri: memory.imageUrl }} style={styles.articleImage} resizeMode="cover" />
           ) : (
@@ -91,9 +107,11 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
             </View>
           )}
         </View>
-        <Text style={styles.captionTitle} numberOfLines={2}>
-          {memory.title || 'Saved Link'}
-        </Text>
+        {memory.title ? (
+          <Text style={styles.captionTitle} numberOfLines={2}>
+            {memory.title}
+          </Text>
+        ) : null}
       </TouchableOpacity>
     );
   }
@@ -109,7 +127,7 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
 
     return (
       <TouchableOpacity style={styles.cardContainer} onPress={onPress} activeOpacity={0.88}>
-        <View style={[styles.imageBox, { height: imageHeight }]}>
+        <View style={[styles.imageBox, { aspectRatio: effectiveRatio }]}>
           <Image source={{ uri: memory.imageUrl }} style={styles.image} resizeMode="cover" />
           {isVideoCard ? (
             <View style={styles.playOverlay}>

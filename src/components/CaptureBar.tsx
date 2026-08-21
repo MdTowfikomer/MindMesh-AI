@@ -89,7 +89,14 @@ export const CaptureBar: React.FC = () => {
         });
         triggerSynapticFusion();
         CyberTheme.haptics.success();
-        showToast('✨ Visual memory analyzed & saved!', 'success');
+
+        const { ByokService } = await import('../services/byokService');
+        const hasKey = await ByokService.hasCustomKey();
+        if (!hasKey) {
+          useMemoryStore.getState().triggerByokPromptIfNeeded();
+        } else {
+          showToast('✨ Visual memory analyzed & saved with BYOK!', 'success');
+        }
       }
     } catch (e: any) {
       setIsSaving(false);
@@ -153,6 +160,8 @@ export const CaptureBar: React.FC = () => {
         });
         triggerSynapticFusion();
         CyberTheme.haptics.success();
+
+        useMemoryStore.getState().triggerByokPromptIfNeeded();
       }
 
       setRecordingSeconds(0);
