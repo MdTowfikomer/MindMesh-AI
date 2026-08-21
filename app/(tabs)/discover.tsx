@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,43 +10,23 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMemoryStore } from '../../src/stores/memoryStore';
-import { SerendipityConnection } from '../../src/types/mindmesh';
-import { BuildPlanTabs } from '../../src/components/BuildPlanTabs';
 import { SynapticFusion } from '../../src/components/SynapticFusion';
 import {
   Sparkles,
-  CheckCircle2,
-  Circle,
   Compass,
-  ArrowRight,
   ChevronRight,
-  FileCode,
 } from '../../src/components/Icons';
 
 export default function DiscoverScreen() {
-  const [selectedConnection, setSelectedConnection] = useState<SerendipityConnection | null>(null);
-
   const {
     memories,
     connections,
-    activeBuildPlan,
     isGeneratingConnections,
     isSynapticFusing,
     generateConnections,
-    deepDiveConnection,
-    toggleNextAction,
-    openBuildPlanModal,
-    isBuildPlanModalVisible,
-    closeBuildPlanModal,
-    openPaywall,
   } = useMemoryStore();
 
   const userMemoriesCount = memories.filter((m) => /^mem-\d+$/.test(m.id)).length;
-
-  const handleDeepDive = async (conn: SerendipityConnection) => {
-    setSelectedConnection(conn);
-    await deepDiveConnection(conn.id);
-  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -178,65 +158,11 @@ export default function DiscoverScreen() {
                     </View>
                   </View>
                 )}
-
-                {/* Action Steps Checklist (If deep dived) */}
-                {conn.nextActions && conn.nextActions.length > 0 ? (
-                  <View style={styles.actionsSection}>
-                    <Text style={styles.actionsSectionTitle}>RECOMMENDED NEXT STEPS</Text>
-                    {conn.nextActions.map((action, idx) => {
-                      const isCompleted = (conn.completedNextActions || []).includes(action);
-                      return (
-                        <TouchableOpacity
-                          key={idx}
-                          style={styles.actionCheckRow}
-                          onPress={() => toggleNextAction(conn.id, action)}
-                          activeOpacity={0.7}
-                        >
-                          {isCompleted ? (
-                            <CheckCircle2 size={15} color="#38BDF8" />
-                          ) : (
-                            <Circle size={15} color="#64748B" />
-                          )}
-                          <Text style={[styles.actionText, isCompleted && styles.actionTextCompleted]}>
-                            {action}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.deepDiveButton}
-                    onPress={() => handleDeepDive(conn)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.deepDiveText}>Extract Action Steps & Proof</Text>
-                    <ArrowRight size={13} color="#94A3B8" />
-                  </TouchableOpacity>
-                )}
-
-                {/* Synthesize 4-Tab Build Plan Button */}
-                <TouchableOpacity
-                  style={styles.buildPlanCta}
-                  onPress={openBuildPlanModal}
-                  activeOpacity={0.85}
-                >
-                  <FileCode size={14} color="#FFFFFF" />
-                  <Text style={styles.buildPlanCtaText}>View 4-Tab Build Spec</Text>
-                </TouchableOpacity>
               </View>
             );
           })
         )}
       </ScrollView>
-
-      {/* Build Plan Modal */}
-      <BuildPlanTabs
-        plan={activeBuildPlan}
-        visible={isBuildPlanModalVisible}
-        onClose={closeBuildPlanModal}
-        onOpenPaywall={openPaywall}
-      />
     </SafeAreaView>
   );
 }

@@ -6,7 +6,7 @@ export class AIService {
   private static readonly SERVER_PROXY_URL = 'https://mindmesh-api.vercel.app';
 
   /**
-   * Calls Gemini AI generation (Direct on-device BYOK or central Vercel proxy fallback)
+   * Calls Gemini AI generation (Direct on-device BYOK only; protects server API keys)
    */
   public static async callBackendProxy(prompt: string): Promise<string | null> {
     try {
@@ -17,21 +17,7 @@ export class AIService {
         if (text) return text;
       }
     } catch (e) {
-      console.log('[AIService] BYOK call error, falling back to proxy:', e);
-    }
-
-    try {
-      const response = await fetch(`${this.SERVER_PROXY_URL}/api/v1/ai/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }),
-      });
-      const data = await response.json();
-      if (data.success && data.text) {
-        return data.text;
-      }
-    } catch (e) {
-      console.log('[AIService] Server proxy fallback to local processing:', e);
+      console.log('[AIService] BYOK execution error:', e);
     }
     return null;
   }
@@ -60,41 +46,37 @@ export class AIService {
         // Compute exact cosine similarity
         const simScore = EmbeddingsService.calculateCosineSimilarity(vecA, vecB);
 
-        // Check if similarity meets adaptive threshold (or force top match for demo seed items)
-        if (simScore >= adaptiveThreshold || (i === 0 && j === 1)) {
-          const confidenceScore = Math.min(0.98, Math.max(0.85, simScore > 0 ? simScore : 0.94));
+        // Check if similarity meets adaptive threshold
+        if (simScore >= adaptiveThreshold) {
+          const confidenceScore = Math.min(0.98, Math.max(0.85, simScore > 0 ? simScore : 0.90));
           const srcLabel = source.title || source.tags[0] || 'Idea';
-          const tgtLabel = target.title || target.tags[0] || 'Build';
+          const tgtLabel = target.title || target.tags[0] || 'Note';
 
           const rawConnection: SerendipityConnection = {
             id: `conn-${Date.now()}-${i}-${j}`,
             sourceMemoryId: source.id,
             targetMemoryId: target.id,
             confidenceScore,
-            title: `${srcLabel.split(' ')[0]} × ${tgtLabel.split(' ')[0]} Build Opportunity`,
+            title: `${srcLabel} × ${tgtLabel}`,
             explainabilityWhy: [
-              `Both items share overlapping concept vectors around ${source.tags[0] || 'Product'} and ${target.tags[0] || 'Engineering'}.`,
-              `Source item '${srcLabel}' was captured on ${new Date(source.createdAt).toLocaleDateString()}.`,
-              `Target item provides execution architecture captured on ${new Date(target.createdAt).toLocaleDateString()}.`
+              `Both items share overlapping concept vectors around ${source.tags[0] || 'Topic'} and ${target.tags[0] || 'Context'}.`,
+              `Source item was captured on ${new Date(source.createdAt).toLocaleDateString()}.`,
+              `Target item provides related contextual insight.`
             ],
             evidenceProof: {
               sourceTitle: srcLabel,
               sourceDate: new Date(source.createdAt).toLocaleDateString(),
               targetTitle: tgtLabel,
               targetDate: new Date(target.createdAt).toLocaleDateString(),
-              quoteSnippet: `Connected research fragment: "${srcLabel}" + "${tgtLabel}"`
+              quoteSnippet: `Connected thoughts: "${srcLabel}" + "${tgtLabel}"`
             },
-            contextSpace: source.contextSpace || 'Shipaton',
-            suggestedBuildIdea: `MindMesh AI — Turn ${srcLabel} & ${tgtLabel} into an executable build plan.`,
+            contextSpace: source.contextSpace || 'Discovery',
+            suggestedBuildIdea: `Cross-pollination between ${srcLabel} and ${tgtLabel}.`,
             actionableGuidance: {
-              paragraph1: `Pattern Discovered: Your research fragment '${srcLabel}' directly connects with '${tgtLabel}'. Together, they form a clear product opportunity around automated onboarding and monetization mechanics.`,
-              paragraph2: `What To Do Next: Rather than letting these saved thoughts sit idle, you can combine the pricing strategy from your saved research with your voice note concept to ship a high-converting mobile feature.`
+              paragraph1: `Pattern Discovered: Your thought '${srcLabel}' connects with '${tgtLabel}'. Together, they form an interesting relationship across your notes.`,
+              paragraph2: `What To Do Next: Review both thoughts together to expand on the common themes.`
             },
-            nextActions: [
-              `1. Validate product model (Storytelling Paywall + Free Trial offer).`,
-              `2. Configure RevenueCat SDK entitlement checks to gate premium exports.`,
-              `3. Launch a dynamic 50% discount exit offer to capture undecided trial users.`
-            ]
+            nextActions: []
           };
 
           // Filter through Hallmark Anti-AI-Slop Gate
@@ -104,38 +86,7 @@ export class AIService {
       }
     }
 
-    return connections.length > 0 ? connections : [
-      SlopGate.verifyConnection({
-        id: `conn-default-${Date.now()}`,
-        sourceMemoryId: memories[0].id,
-        targetMemoryId: memories[1].id,
-        confidenceScore: 0.95,
-        title: 'Dynamic RevenueCat Storytelling Paywall + AI Synaptic Build Plan',
-        explainabilityWhy: [
-          'Both thoughts focus on converting captured ideas directly into product features.',
-          'Mem-1 provides pricing strategy (3-Page Storytelling Paywall + Swipe Exit Offer).',
-          'Mem-2 provides core AI engine (Local embedding convergence into executable Build Plans).'
-        ],
-        evidenceProof: {
-          sourceTitle: memories[0].title,
-          sourceDate: 'July 15, 2026',
-          targetTitle: memories[1].title,
-          targetDate: 'August 11, 2026',
-          quoteSnippet: 'Connects RevenueCat 3-Page Storytelling Paywall with auto-generated PRD specs in under 60 seconds.'
-        },
-        contextSpace: memories[0].contextSpace || 'Shipaton',
-        suggestedBuildIdea: 'MindMesh AI — Turn scattered thoughts into executable build plans & RevenueCat paywalls.',
-        actionableGuidance: {
-          paragraph1: 'Pattern Discovered: Your pricing screenshot directly connects with your voice note recorded today. Together, they form a clear product opportunity around automated subscription onboarding.',
-          paragraph2: 'What To Do Next: Combine the pricing mechanics from your screenshot with your voice note concept to ship a high-converting mobile feature.'
-        },
-        nextActions: [
-          '1. Validate pricing model (3-Page Storytelling Paywall + 7-Day Free Trial offer).',
-          '2. Configure RevenueCat SDK entitlement checks to gate premium Build Plan exports.',
-          '3. Launch a dynamic 50% discount exit offer to capture undecided trial users.'
-        ]
-      }).connection
-    ];
+    return connections;
   }
 
   /**
