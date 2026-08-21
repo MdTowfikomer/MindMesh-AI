@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SerendipityConnection } from '../types/mindmesh';
-import { theme } from '../theme/tokens';
-import { Sparkles, CheckCircle2, FileCode, ArrowRight, ShieldCheck, ChevronDown } from './Icons';
+import { Sparkles, CheckCircle2, FileCode, ChevronDown } from './Icons';
 import { useMemoryStore } from '../stores/memoryStore';
 
 interface ConnectionCardProps {
@@ -18,7 +17,6 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
   const completedActions = connection.completedNextActions || [];
   const hasNextActions = connection.nextActions && connection.nextActions.length > 0;
   const totalActions = connection.nextActions?.length || 0;
-  const progressRatio = totalActions > 0 ? completedActions.length / totalActions : 0;
   const isFullyCompleted = totalActions > 0 && completedActions.length === totalActions;
 
   const handleShowNextSteps = async () => {
@@ -28,17 +26,16 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
   };
 
   return (
-    <View style={[styles.card, isFullyCompleted && styles.completedCard]}>
-      {/* Editorial Title & Match Tag */}
+    <View style={styles.card}>
+      {/* Header: Fit Tag & Space */}
       <View style={styles.header}>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{(connection.confidenceScore * 100).toFixed(0)}% MATCH</Text>
+        <View style={styles.fitPill}>
+          <Text style={styles.fitText}>{(connection.confidenceScore * 100).toFixed(0)}% Match</Text>
         </View>
-
         <Text style={styles.contextSpaceText}>#{connection.contextSpace}</Text>
       </View>
 
-      {/* Connection Title */}
+      {/* Connection Title & Suggested Idea */}
       <Text style={styles.title}>{connection.title}</Text>
       <Text style={styles.buildIdea}>{connection.suggestedBuildIdea}</Text>
 
@@ -50,21 +47,17 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
         </View>
       )}
 
-      {/* Sourced From Reference Text */}
+      {/* Sourced Reference Quote */}
       {connection.evidenceProof.quoteSnippet ? (
         <Text style={styles.sourcedFromText}>
-          🔗 {connection.evidenceProof.quoteSnippet}
+          "{connection.evidenceProof.quoteSnippet}"
         </Text>
       ) : null}
 
-      {/* Interactive Action Steps — Stage 2 loaded on demand */}
+      {/* Interactive Action Steps */}
       {hasNextActions ? (
         <View style={styles.nextActionsBox}>
-          <View style={styles.nextActionsHeader}>
-            <Text style={styles.nextActionsLabel}>RECOMMENDED NEXT STEPS (TAP TO COMPLETE):</Text>
-            {isFullyCompleted && <Text style={styles.shippedTag}>✓ READY TO SHIP</Text>}
-          </View> 
-
+          <Text style={styles.nextActionsLabel}>RECOMMENDED NEXT STEPS</Text>
           {connection.nextActions!.map((actionText, idx) => {
             const isChecked = completedActions.includes(actionText);
             return (
@@ -75,7 +68,7 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
                 activeOpacity={0.8}
               >
                 <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-                  {isChecked && <CheckCircle2 size={13} color="#FFFFFF" />}
+                  {isChecked && <CheckCircle2 size={12} color="#FFFFFF" />}
                 </View>
                 <Text style={[styles.nextActionText, isChecked && styles.nextActionTextChecked]}>
                   {actionText}
@@ -92,63 +85,55 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
           activeOpacity={0.8}
         >
           {isLoadingDeepDive ? (
-            <ActivityIndicator size="small" color={theme.colors.auroraPurple} />
+            <ActivityIndicator size="small" color="#94A3B8" />
           ) : (
-            <CheckCircle2 size={14} color={theme.colors.auroraPurple} />
+            <Sparkles size={13} color="#94A3B8" />
           )}
           <Text style={styles.showNextStepsText}>
-            {isLoadingDeepDive ? 'Generating Next Steps...' : 'Show 3 Actionable Next Steps'}
+            {isLoadingDeepDive ? 'Generating steps...' : 'Show Actionable Next Steps'}
           </Text>
         </TouchableOpacity>
       )}
 
-      {/* Progressive Disclosure Toggle ("Deep Dive into Specs") */}
+      {/* Deep-Dive Disclosure Toggle */}
       <TouchableOpacity
         style={styles.deepDiveToggleBtn}
         onPress={() => setIsExpanded(!isExpanded)}
         activeOpacity={0.8}
       >
         <Text style={styles.deepDiveToggleText}>
-          {isExpanded ? 'Hide Technical Proof & Evidence' : '🔍 Deep Dive into Technical Proof & Evidence'}
+          {isExpanded ? 'Hide technical proof' : 'Show technical proof & evidence'}
         </Text>
         <View style={{ transform: [{ rotate: isExpanded ? '180deg' : '0deg' }] }}>
-          <ChevronDown size={14} color={theme.colors.auroraIndigo} />
+          <ChevronDown size={14} color="#64748B" />
         </View>
       </TouchableOpacity>
 
       {/* Accordion Expanded Deep-Dive Content */}
       {isExpanded && (
         <View style={styles.expandedSection}>
-          {/* Explainability Section: WHY */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>CONNECTED BECAUSE (EXPLAINABILITY):</Text>
+            <Text style={styles.sectionTitle}>CONNECTED BECAUSE:</Text>
             {connection.explainabilityWhy.map((reason, idx) => (
               <View key={idx} style={styles.bulletRow}>
-                <CheckCircle2 size={12} color={theme.colors.auroraEmerald} style={{ marginTop: 2 }} />
+                <Text style={styles.bulletDot}>•</Text>
                 <Text style={styles.bulletText}>{reason}</Text>
               </View>
             ))}
           </View>
 
-          {/* Evidence Section: PROOF */}
           <View style={styles.evidenceBox}>
-            <Text style={styles.evidenceLabel}>VERIFIED EVIDENCE PROOF:</Text>
-            <Text style={styles.evidenceSources}>
-              • {connection.evidenceProof.sourceTitle} ({connection.evidenceProof.sourceDate})
-            </Text>
-            <Text style={styles.evidenceSources}>
-              • {connection.evidenceProof.targetTitle} ({connection.evidenceProof.targetDate})
-            </Text>
-            <Text style={styles.quoteSnippet}>"{connection.evidenceProof.quoteSnippet}"</Text>
+            <Text style={styles.evidenceLabel}>EVIDENCE:</Text>
+            <Text style={styles.evidenceSources}>• {connection.evidenceProof.sourceTitle}</Text>
+            <Text style={styles.evidenceSources}>• {connection.evidenceProof.targetTitle}</Text>
           </View>
         </View>
       )}
 
-      {/* Hero Action: View Full 4-Tab Technical Build Spec */}
+      {/* Action: View 4-Tab Build Spec */}
       <TouchableOpacity style={styles.buildPlanButton} activeOpacity={0.88} onPress={onGenerateBuildPlan}>
-        <FileCode size={16} color="#FFF" />
-        <Text style={styles.buildPlanButtonText}>View Complete 4-Tab Build Spec</Text>
-        <ArrowRight size={14} color="#FFF" />
+        <FileCode size={15} color="#F8FAFC" />
+        <Text style={styles.buildPlanButtonText}>View 4-Tab Build Spec</Text>
       </TouchableOpacity>
     </View>
   );
@@ -156,285 +141,204 @@ export const ConnectionCard: React.FC<ConnectionCardProps> = ({ connection, onGe
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF', // Clean White Swiss Surface
-    borderRadius: theme.radii.lg,
-    borderColor: 'rgba(99, 102, 241, 0.25)',
-    borderWidth: 1.5,
-    padding: 18,
-    marginBottom: 16,
-    ...theme.shadows.card,
-  },
-  completedCard: {
-    borderColor: 'rgba(16, 185, 129, 0.4)',
-    backgroundColor: '#FAFDFB',
+    backgroundColor: '#181A20',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    padding: 16,
+    marginBottom: 14,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(168, 85, 247, 0.12)',
+  fitPill: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: theme.radii.xs,
-  },
-  badgeText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 10,
-    color: theme.colors.auroraPurple,
-  },
-  slopBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    paddingHorizontal: 6,
     paddingVertical: 3,
-    borderRadius: theme.radii.xs,
+    borderRadius: 6,
   },
-  slopBadgeText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 9,
-    color: theme.colors.auroraEmerald,
-    letterSpacing: 0.4,
+  fitText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#CBD5E1',
   },
   contextSpaceText: {
-    fontFamily: theme.fonts.sansMedium,
     fontSize: 11,
-    color: theme.colors.textMuted,
-  },
-  progressBadge: {
-    backgroundColor: 'rgba(15, 23, 42, 0.05)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  progressBadgeDone: {
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-  },
-  progressBadgeText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 9,
-    color: theme.colors.textMuted,
-    letterSpacing: 0.5,
-  },
-  progressBadgeTextDone: {
-    color: theme.colors.auroraEmerald,
+    color: '#64748B',
   },
   title: {
-    fontFamily: theme.fonts.serif,
-    fontSize: 21,
-    color: theme.colors.textPrimary,
-    lineHeight: 25,
-    letterSpacing: theme.tracking.tight,
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    lineHeight: 21,
+    marginBottom: 6,
   },
   buildIdea: {
-    fontFamily: theme.fonts.sansMedium,
     fontSize: 13,
-    color: theme.colors.auroraCyan,
-    marginBottom: 14,
+    color: '#94A3B8',
+    lineHeight: 18,
+    marginBottom: 12,
   },
   guidanceBox: {
-    backgroundColor: 'rgba(109, 40, 217, 0.04)',
-    borderColor: 'rgba(109, 40, 217, 0.12)',
-    borderWidth: 1,
-    borderRadius: theme.radii.sm,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 10,
     padding: 12,
-    marginBottom: 14,
-  },
-  guidanceLabel: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 10,
-    color: theme.colors.auroraPurple,
-    letterSpacing: 0.8,
-    marginBottom: 4,
+    marginBottom: 12,
+    gap: 6,
   },
   guidanceParagraph: {
-    fontFamily: theme.fonts.sans,
     fontSize: 12,
-    color: theme.colors.textSecondary,
-    lineHeight: 18,
-    marginBottom: 4,
+    color: '#CBD5E1',
+    lineHeight: 17,
   },
   sourcedFromText: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 10,
+    fontSize: 11,
     fontStyle: 'italic',
-    color: theme.colors.textMuted,
+    color: '#64748B',
     marginBottom: 12,
-    lineHeight: 14,
+    fontFamily: 'serif',
+  },
+  nextActionsBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    gap: 6,
+  },
+  nextActionsLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  nextActionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.02)',
+    gap: 8,
+  },
+  nextActionItemChecked: {
+    opacity: 0.6,
+  },
+  checkbox: {
+    width: 16,
+    height: 16,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: '#64748B',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#38BDF8',
+    borderColor: '#38BDF8',
+  },
+  nextActionText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#E2E8F0',
+  },
+  nextActionTextChecked: {
+    color: '#64748B',
+    textDecorationLine: 'line-through',
   },
   showNextStepsBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(67, 56, 202, 0.06)',
-    borderColor: 'rgba(67, 56, 202, 0.2)',
+    gap: 6,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 10,
     borderWidth: 1,
-    borderRadius: theme.radii.sm,
-    paddingVertical: 11,
-    marginBottom: 14,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    marginBottom: 12,
   },
   showNextStepsText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 11,
-    color: theme.colors.auroraPurple,
-  },
-  nextActionsBox: {
-    backgroundColor: 'rgba(67, 56, 202, 0.04)',
-    borderColor: 'rgba(67, 56, 202, 0.15)',
-    borderWidth: 1,
-    borderRadius: theme.radii.sm,
-    padding: 12,
-    marginBottom: 14,
-  },
-  nextActionsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  nextActionsLabel: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 10,
-    color: theme.colors.auroraIndigo,
-    letterSpacing: 0.8,
-  },
-  shippedTag: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 9,
-    color: theme.colors.auroraEmerald,
-  },
-  nextActionItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: theme.radii.xs,
-    marginBottom: 4,
-  },
-  nextActionItemChecked: {
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-  },
-  checkbox: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1.5,
-    borderColor: theme.colors.auroraIndigo,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 1,
-  },
-  checkboxChecked: {
-    backgroundColor: theme.colors.auroraEmerald,
-    borderColor: theme.colors.auroraEmerald,
-  },
-  nextActionText: {
-    fontFamily: theme.fonts.sansMedium,
     fontSize: 12,
-    color: theme.colors.textPrimary,
-    flex: 1,
-    lineHeight: 18,
-  },
-  nextActionTextChecked: {
-    color: theme.colors.textMuted,
-    textDecorationLine: 'line-through',
+    fontWeight: '500',
+    color: '#94A3B8',
   },
   deepDiveToggleBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(99, 102, 241, 0.06)',
-    borderRadius: theme.radii.xs,
-    marginBottom: 12,
-  },
-  deepDiveToggleText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 11,
-    color: theme.colors.auroraIndigo,
-  },
-  expandedSection: {
-    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.05)',
     marginBottom: 10,
   },
-  section: {
+  deepDiveToggleText: {
+    fontSize: 11,
+    color: '#64748B',
+  },
+  expandedSection: {
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 10,
+    padding: 12,
     marginBottom: 12,
+    gap: 10,
+  },
+  section: {
+    gap: 4,
   },
   sectionTitle: {
-    fontFamily: theme.fonts.sansBold,
     fontSize: 10,
-    color: theme.colors.textMuted,
-    letterSpacing: 0.8,
-    marginBottom: 6,
+    fontWeight: '600',
+    color: '#64748B',
+    letterSpacing: 0.5,
   },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 6,
-    marginBottom: 4,
+  },
+  bulletDot: {
+    color: '#64748B',
+    fontSize: 12,
   },
   bulletText: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 12,
-    color: theme.colors.textSecondary,
     flex: 1,
+    fontSize: 11,
+    color: '#94A3B8',
     lineHeight: 16,
   },
   evidenceBox: {
-    backgroundColor: 'rgba(15, 23, 42, 0.03)',
-    borderRadius: theme.radii.sm,
-    padding: 10,
-    borderLeftWidth: 2,
-    borderLeftColor: theme.colors.auroraRose,
-    marginBottom: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
+    paddingTop: 6,
+    gap: 2,
   },
   evidenceLabel: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 9,
-    color: theme.colors.auroraRose,
-    letterSpacing: 0.8,
-    marginBottom: 4,
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
   },
   evidenceSources: {
-    fontFamily: theme.fonts.sans,
     fontSize: 11,
-    color: theme.colors.textMuted,
-  },
-  quoteSnippet: {
-    fontFamily: theme.fonts.sansMedium,
-    fontSize: 11,
-    color: theme.colors.textSecondary,
-    fontStyle: 'italic',
-    marginTop: 4,
+    color: '#94A3B8',
   },
   buildPlanButton: {
-    backgroundColor: theme.colors.auroraIndigo,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingVertical: 12,
-    borderRadius: theme.radii.md,
+    backgroundColor: '#222530',
+    borderRadius: 10,
+    paddingVertical: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   buildPlanButtonText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 13,
-    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#F8FAFC',
   },
 });

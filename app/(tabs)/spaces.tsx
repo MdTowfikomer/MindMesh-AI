@@ -126,10 +126,10 @@ export default function SpacesScreen() {
   // ─── Full Screen Image Viewer ───────────────────────────────────────────────
   if (fullScreenImage) {
     return (
-      <View style={styles.fullScreenContainer}>
+      <View style={styles.fullScreenBackdrop}>
         <StatusBar hidden />
         <Image source={{ uri: fullScreenImage }} style={styles.fullScreenImage} resizeMode="contain" />
-        <TouchableOpacity style={styles.fullScreenClose} onPress={() => setFullScreenImage(null)}>
+        <TouchableOpacity style={styles.fullScreenCloseBtn} onPress={() => setFullScreenImage(null)}>
           <X size={22} color="#FFF" />
         </TouchableOpacity>
       </View>
@@ -274,11 +274,9 @@ export default function SpacesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.bg,
+    backgroundColor: '#101114',
   },
-
-  // Full screen image viewer
-  fullScreenContainer: {
+  fullScreenBackdrop: {
     flex: 1,
     backgroundColor: '#000',
     justifyContent: 'center',
@@ -288,14 +286,14 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
   },
-  fullScreenClose: {
+  fullScreenCloseBtn: {
     position: 'absolute',
     top: 50,
     right: 20,
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -306,18 +304,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   headerTitle: {
-    fontFamily: theme.fonts.serif,
     fontSize: 22,
-    color: theme.colors.textPrimary,
+    fontWeight: '800',
+    color: '#F8FAFC',
   },
   addBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: theme.colors.textPrimary,
+    backgroundColor: 'rgba(0, 242, 254, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 254, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -330,46 +330,47 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
   },
   spaceCard: {
-    width: '48.5%',
-    marginBottom: 10,
+    width: '48%',
+    marginBottom: 12,
   },
   spaceCover: {
     width: '100%',
     height: 160,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   spaceCoverPlaceholder: {
     width: '100%',
     height: 160,
-    backgroundColor: theme.colors.surfaceSubtle,
-    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   spaceName: {
-    fontFamily: theme.fonts.sans,
     fontSize: 13,
-    color: theme.colors.textPrimary,
+    fontWeight: '700',
+    color: '#F8FAFC',
     marginTop: 6,
     paddingHorizontal: 2,
   },
   emptyState: {
     paddingVertical: 80,
     alignItems: 'center',
-    gap: 8,
+    gap: 12,
   },
   emptyTitle: {
-    fontFamily: theme.fonts.sansMedium,
-    fontSize: 15,
-    color: theme.colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F8FAFC',
   },
   emptySub: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 12,
-    color: theme.colors.textMuted,
+    fontSize: 13,
+    color: '#64748B',
     textAlign: 'center',
     paddingHorizontal: 40,
   },
@@ -379,8 +380,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
-    gap: 2,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 4,
   },
   detailHeaderRow: {
     flexDirection: 'row',
@@ -390,33 +391,34 @@ const styles = StyleSheet.create({
   },
   backBtn: {},
   backBtnText: {
-    fontFamily: theme.fonts.sansMedium,
     fontSize: 13,
-    color: theme.colors.auroraIndigo,
+    fontWeight: '600',
+    color: '#00F2FE',
   },
   deleteDirectoryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(225, 29, 72, 0.08)',
+    backgroundColor: 'rgba(225, 29, 72, 0.12)',
     paddingHorizontal: 10,
     paddingVertical: 5,
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(225, 29, 72, 0.3)',
   },
   deleteDirectoryText: {
-    fontFamily: theme.fonts.sansMedium,
     fontSize: 11,
-    color: '#E11D48',
+    fontWeight: '700',
+    color: '#FF007F',
   },
   detailTitle: {
-    fontFamily: theme.fonts.serif,
     fontSize: 22,
-    color: theme.colors.textPrimary,
+    fontWeight: '800',
+    color: '#F8FAFC',
   },
   detailCount: {
-    fontFamily: theme.fonts.sans,
     fontSize: 12,
-    color: theme.colors.textMuted,
+    color: '#64748B',
   },
   detailGrid: {
     padding: 10,
@@ -425,29 +427,30 @@ const styles = StyleSheet.create({
   gridRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
   },
   detailCard: {
-    width: '48.5%',
+    width: '48%',
     marginBottom: 10,
   },
   detailCardImage: {
     width: '100%',
     height: 140,
-    borderRadius: 10,
+    borderRadius: 14,
   },
   detailCardText: {
     width: '100%',
     height: 140,
-    backgroundColor: '#F5F5F3',
-    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     padding: 12,
     justifyContent: 'center',
   },
   detailCardTextContent: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 11,
-    color: theme.colors.textSecondary,
+    fontSize: 12,
+    color: '#94A3B8',
     lineHeight: 16,
   },
   detailCardFooter: {
@@ -458,25 +461,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   detailCardCaption: {
-    fontFamily: theme.fonts.sans,
     fontSize: 10,
-    color: theme.colors.textMuted,
+    color: '#64748B',
     flex: 1,
   },
 
   // Modal
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(3, 3, 8, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
+    backgroundColor: '#0E1020',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 242, 254, 0.3)',
     padding: 20,
     width: '85%',
     gap: 14,
+    shadowColor: '#00F2FE',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 8,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -484,30 +493,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   modalTitle: {
-    fontFamily: theme.fonts.sansBold,
     fontSize: 16,
-    color: theme.colors.textPrimary,
+    fontWeight: '800',
+    color: '#F8FAFC',
   },
   modalInput: {
-    fontFamily: theme.fonts.sans,
     fontSize: 14,
-    color: theme.colors.textPrimary,
+    color: '#F8FAFC',
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 14,
     paddingVertical: 10,
   },
   modalHint: {
-    fontFamily: theme.fonts.sans,
     fontSize: 11,
-    color: theme.colors.textMuted,
+    color: '#64748B',
     lineHeight: 15,
   },
   createBtn: {
-    backgroundColor: theme.colors.textPrimary,
+    backgroundColor: '#00F2FE',
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
   },
   createBtnDisabled: {

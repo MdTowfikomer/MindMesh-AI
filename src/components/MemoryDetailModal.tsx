@@ -1,9 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native';
-import { theme } from '../theme/tokens';
-import { X, Plus, Folder, Share2, Trash2, Check, Sparkles } from './Icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Image,
+  Share,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  ChevronDown,
+  Plus,
+  Share2,
+  Trash2,
+  Check,
+  X,
+  Folder,
+  FileText,
+  Mic,
+  MoreHorizontal,
+} from './Icons';
 import { MemoryItem } from '../types/mindmesh';
 import { useMemoryStore } from '../stores/memoryStore';
+import { SoundEffects } from '../services/soundEffects';
+import { AddTagModal } from './AddTagModal';
 
 export const MemoryDetailModal: React.FC = () => {
   const {
@@ -14,16 +37,13 @@ export const MemoryDetailModal: React.FC = () => {
     updateMemoryNote,
     updateMemoryDirectory,
     deleteMemory,
-    openShareSheet,
-    openBuildPlanModal,
   } = useMemoryStore();
 
-  const [isAddingTag, setIsAddingTag] = useState(false);
-  const [newTagText, setNewTagText] = useState('');
+  const [isAddTagModalOpen, setIsAddTagModalOpen] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [isSelectingDirectory, setIsSelectingDirectory] = useState(false);
 
-  const availableDirectories = ['Shipaton', 'Pricing', 'RevenueCat', 'MobileUX', 'Startup Ideas', 'Personal'];
+  const availableDirectories = ['Shipathon', 'Pricing', 'Notes', 'Visuals', 'Startup Ideas', 'Personal'];
 
   useEffect(() => {
     if (selectedMemory) {
@@ -33,18 +53,8 @@ export const MemoryDetailModal: React.FC = () => {
 
   if (!isMemoryDetailVisible || !selectedMemory) return null;
 
-  const handleAddTag = () => {
-    const trimmed = newTagText.trim().replace(/^#/, '');
-    if (trimmed && !selectedMemory.tags.includes(trimmed)) {
-      const updated = [...selectedMemory.tags, trimmed];
-      updateMemoryTags(selectedMemory.id, updated);
-    }
-    setNewTagText('');
-    setIsAddingTag(false);
-  };
-
   const handleRemoveTag = (tagToRemove: string) => {
-    const updated = selectedMemory.tags.filter(t => t !== tagToRemove);
+    const updated = selectedMemory.tags.filter((t) => t !== tagToRemove);
     updateMemoryTags(selectedMemory.id, updated);
   };
 
@@ -59,414 +69,326 @@ export const MemoryDetailModal: React.FC = () => {
   };
 
   const handleDelete = () => {
+    SoundEffects.playCrumpleSound();
     deleteMemory(selectedMemory.id);
+    closeMemoryDetail();
   };
 
-  // Format time ago string
+  const handleShare = async () => {
+    try {
+      const shareContent = selectedMemory.imageUrl
+        ? { title: selectedMemory.title, url: selectedMemory.imageUrl }
+        : { title: selectedMemory.title, message: selectedMemory.content || selectedMemory.title };
+      await Share.share(shareContent);
+    } catch (e) {
+      console.warn('Share error:', e);
+    }
+  };
+
   const getTimeAgo = () => {
-    if (!selectedMemory.createdAt) return 'recently';
-    const diffHours = Math.round((Date.now() - new Date(selectedMemory.createdAt).getTime()) / (1000 * 60 * 60));
-    if (diffHours < 1) return 'less than an hour ago';
-    if (diffHours === 1) return '1 hour ago';
-    return `${diffHours} hours ago`;
+    if (!selectedMemory.createdAt) return 'just now';
+    const diffSeconds = Math.round((Date.now() - new Date(selectedMemory.createdAt).getTime()) / 1000);
+    if (diffSeconds < 60) return `${Math.max(1, diffSeconds)} seconds ago`;
+    const diffMinutes = Math.round(diffSeconds / 60);
+    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+    const diffHours = Math.round(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    return 'recently';
   };
 
   return (
-    <Modal visible={isMemoryDetailVisible} animationType="slide" transparent={true} onRequestClose={closeMemoryDetail}>
-      <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={closeMemoryDetail}>
-        <View style={styles.modalSheet} onStartShouldSetResponder={() => true}>
-          {/* Header Bar */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-              <Sparkles size={16} color={theme.colors.auroraPurple} />
-              <Text style={styles.modalHeaderTitle}>Mind Memory Detail</Text>
-            </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={closeMemoryDetail}>
-              <X size={18} color={theme.colors.textMuted} />
-            </TouchableOpacity>
-          </View>
+    <Modal
+      visible={isMemoryDetailVisible}
+      animationType="slide"
+      transparent={false}
+      onRequestClose={closeMemoryDetail}
+    >
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        {/* Top Header Bar: Down Arrow, Title, More Options */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.headerIconButton} onPress={closeMemoryDetail}>
+            <ChevronDown size={22} color="#CBD5E1" />
+          </TouchableOpacity>
 
-          <ScrollView style={styles.scrollBody} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            {/* Prominent Hero Visual Media Preview (Uncropped Full Aspect Ratio) */}
-            {selectedMemory.imageUrl && (
-              <View style={[styles.heroMediaContainer, { aspectRatio: selectedMemory.aspectRatio || 1.1 }]}>
-                <Image source={{ uri: selectedMemory.imageUrl }} style={styles.heroMediaImage} resizeMode="contain" />
-              </View>
-            )}
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {selectedMemory.title || 'Untitled'}
+          </Text>
 
-            {/* Audio Waveform Player Box if Voice Memo */}
-            {selectedMemory.type === 'voice' && (
-              <View style={styles.heroVoicePlayerBox}>
-                <Text style={styles.heroVoiceTitle}>🎙️ Voice Recording ({selectedMemory.audioDuration || '0:30'})</Text>
-                <View style={styles.heroWaveformBars}>
-                  {(selectedMemory.audioWaveform || [20, 50, 90, 70, 100, 40, 80, 60, 95, 30]).map((barHeight, idx) => (
-                    <View
-                      key={idx}
-                      style={[
-                        styles.heroWaveformBar,
-                        { height: Math.max(10, barHeight * 0.4) },
-                      ]}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* TLDR Section */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionLabel}>TLDR</Text>
-              <View style={styles.tldrBox}>
-                <Text style={styles.tldrTitle}>{selectedMemory.title}</Text>
-                <Text style={styles.tldrText}>
-                  {selectedMemory.content || selectedMemory.ocrText || 'Captured research fragment'}
-                </Text>
-              </View>
-            </View>
-
-            {/* MIND TAGS Section */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionLabel}>MIND TAGS</Text>
-              <View style={styles.tagsGrid}>
-                {/* Orange "+ Add tag" Button */}
-                {isAddingTag ? (
-                  <View style={styles.addTagInputRow}>
-                    <TextInput
-                      style={styles.addTagInput}
-                      placeholder="Tag name..."
-                      placeholderTextColor={theme.colors.textMuted}
-                      value={newTagText}
-                      onChangeText={setNewTagText}
-                      autoFocus
-                      onSubmitEditing={handleAddTag}
-                    />
-                    <TouchableOpacity style={styles.confirmTagBtn} onPress={handleAddTag}>
-                      <Check size={14} color="#FFF" />
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <TouchableOpacity style={styles.addTagBtn} onPress={() => setIsAddingTag(true)}>
-                    <Plus size={14} color="#FFF" />
-                    <Text style={styles.addTagText}>Add tag</Text>
-                  </TouchableOpacity>
-                )}
-
-                {/* Existing Tag Pills */}
-                {selectedMemory.tags.map((tag, idx) => (
-                  <TouchableOpacity key={idx} style={styles.tagPill} onPress={() => handleRemoveTag(tag)}>
-                    <Text style={styles.tagPillText}>{tag}</Text>
-                    <X size={11} color={theme.colors.textMuted} />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            {/* MIND NOTES Section */}
-            <View style={styles.sectionContainer}>
-              <Text style={styles.sectionLabel}>MIND NOTES</Text>
-              <View style={styles.notesBox}>
-                <TextInput
-                  style={styles.notesInput}
-                  placeholder="Type here to add a note..."
-                  placeholderTextColor={theme.colors.textMuted}
-                  multiline
-                  value={noteText}
-                  onChangeText={handleNoteChange}
-                />
-              </View>
-            </View>
-
-            {/* Build Spec Shortcut Button */}
-            <TouchableOpacity style={styles.buildSpecBanner} onPress={() => { closeMemoryDetail(); openBuildPlanModal(); }}>
-              <Sparkles size={14} color={theme.colors.auroraPurple} />
-              <Text style={styles.buildSpecText}>View Synthesized Build Spec for this item</Text>
-            </TouchableOpacity>
-
-            {/* Directory Selection Sub-Menu */}
-            {isSelectingDirectory && (
-              <View style={styles.directoryPickerBox}>
-                <Text style={styles.directoryPickerTitle}>SELECT DIRECTORY COLLECTION:</Text>
-                <View style={styles.directoryChipsRow}>
-                  {availableDirectories.map((dir) => {
-                    const isSelected = (selectedMemory.directory || selectedMemory.contextSpace) === dir;
-                    return (
-                      <TouchableOpacity
-                        key={dir}
-                        style={[styles.directoryChip, isSelected && styles.directoryChipActive]}
-                        onPress={() => handleSelectDirectory(dir)}
-                      >
-                        <Text style={[styles.directoryChipText, isSelected && styles.directoryChipTextActive]}>
-                          📁 {dir}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </View>
-            )}
-          </ScrollView>
-
-          {/* Bottom Action Bar (3 Options: Directories, Share, Delete) */}
-          <View style={styles.bottomBar}>
-            <View style={styles.actionRow}>
-              {/* Option 1: Directories (Replaces Spaces) */}
-              <TouchableOpacity
-                style={[styles.actionBtn, isSelectingDirectory && styles.actionBtnActive]}
-                onPress={() => setIsSelectingDirectory(!isSelectingDirectory)}
-              >
-                <Folder size={16} color={theme.colors.textPrimary} />
-                <Text style={styles.actionBtnText}>
-                  {selectedMemory.directory || selectedMemory.contextSpace || 'Directories'}
-                </Text>
-              </TouchableOpacity>
-
-              {/* Option 2: Share */}
-              <TouchableOpacity style={styles.actionBtn} onPress={() => { closeMemoryDetail(); openShareSheet(); }}>
-                <Share2 size={16} color={theme.colors.textPrimary} />
-                <Text style={styles.actionBtnText}>Share</Text>
-              </TouchableOpacity>
-
-              {/* Option 3: Delete (Danger Red Pill) */}
-              <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
-                <Trash2 size={16} color="#E11D48" />
-                <Text style={styles.deleteBtnText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Footer Timestamp */}
-            <Text style={styles.footerTimestamp}>
-              Saved to your mind, {getTimeAgo()}
-            </Text>
-          </View>
+          <TouchableOpacity style={styles.headerIconButton}>
+            <MoreHorizontal size={20} color="#CBD5E1" />
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+
+        <ScrollView
+          style={styles.scrollBody}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Main Hero Card Canvas */}
+          {selectedMemory.imageUrl ? (
+            <View style={styles.heroImageBox}>
+              <Image source={{ uri: selectedMemory.imageUrl }} style={styles.heroImage} resizeMode="cover" />
+            </View>
+          ) : (
+            <View style={styles.heroTextBox}>
+              <Text style={styles.heroTextContent}>
+                {selectedMemory.content || selectedMemory.ocrText || selectedMemory.title || 'Note content'}
+              </Text>
+              {selectedMemory.type === 'voice' && selectedMemory.audioDuration ? (
+                <Text style={styles.voiceMetaText}>🎙️ {selectedMemory.audioDuration} Voice Memo</Text>
+              ) : null}
+            </View>
+          )}
+
+          {/* MIND TAGS Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>MIND TAGS</Text>
+            <View style={styles.tagsRow}>
+              {/* + Add tag Button (mymind signature coral pill) */}
+              <TouchableOpacity
+                style={styles.addTagPill}
+                onPress={() => setIsAddTagModalOpen(true)}
+                activeOpacity={0.85}
+              >
+                <Plus size={12} color="#FFF" />
+                <Text style={styles.addTagPillText}>Add tag</Text>
+              </TouchableOpacity>
+
+              {/* Tag Pills */}
+              {selectedMemory.tags.map((tag, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.tagItem}
+                  onPress={() => handleRemoveTag(tag)}
+                >
+                  <FileText size={11} color="#94A3B8" />
+                  <Text style={styles.tagItemText}>{tag}</Text>
+                  <X size={10} color="#64748B" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* MIND NOTES Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>MIND NOTES</Text>
+            <View style={styles.notesContainer}>
+              <TextInput
+                style={styles.notesInput}
+                placeholder="Type here to add a note..."
+                placeholderTextColor="#64748B"
+                multiline
+                value={noteText}
+                onChangeText={handleNoteChange}
+              />
+            </View>
+          </View>
+
+          {/* Spaces Sub-Menu (If opened) */}
+          {isSelectingDirectory && (
+            <View style={styles.directoryBox}>
+              <Text style={styles.directoryBoxLabel}>ASSIGN TO SPACE:</Text>
+              <View style={styles.directoryChipsRow}>
+                {availableDirectories.map((dir) => {
+                  const isSelected = (selectedMemory.directory || selectedMemory.contextSpace) === dir;
+                  return (
+                    <TouchableOpacity
+                      key={dir}
+                      style={[styles.directoryChip, isSelected && styles.directoryChipActive]}
+                      onPress={() => handleSelectDirectory(dir)}
+                    >
+                      <Text style={[styles.directoryChipText, isSelected && styles.directoryChipTextActive]}>
+                        {dir}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Bottom Action Dock: Spaces, Share, Delete */}
+        <View style={styles.bottomDock}>
+          <View style={styles.actionButtonsRow}>
+            {/* Spaces Pill */}
+            <TouchableOpacity
+              style={[styles.dockBtn, isSelectingDirectory && styles.dockBtnActive]}
+              onPress={() => setIsSelectingDirectory(!isSelectingDirectory)}
+            >
+              <Folder size={14} color="#CBD5E1" />
+              <Text style={styles.dockBtnText}>
+                {selectedMemory.directory || selectedMemory.contextSpace || 'Spaces'}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Share Pill */}
+            <TouchableOpacity style={styles.dockBtn} onPress={handleShare}>
+              <Share2 size={14} color="#CBD5E1" />
+              <Text style={styles.dockBtnText}>Share</Text>
+            </TouchableOpacity>
+
+            {/* Delete Pill (mymind soft coral pill) */}
+            <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+              <Trash2 size={14} color="#E11D48" />
+              <Text style={styles.deleteBtnText}>Delete</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Footer Attribution */}
+          <Text style={styles.footerTimeText}>
+            Saved to your mind, {getTimeAgo()}
+          </Text>
+        </View>
+
+        {/* Add Tag Modal Overlay (mymind popup with Keyboard autofocus) */}
+        <AddTagModal
+          visible={isAddTagModalOpen}
+          onClose={() => setIsAddTagModalOpen(false)}
+          currentTags={selectedMemory.tags}
+          onSaveTags={(newTags) => updateMemoryTags(selectedMemory.id, newTags)}
+        />
+      </SafeAreaView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  backdrop: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    justifyContent: 'flex-end',
-  },
-  modalSheet: {
-    backgroundColor: '#FFFFFF', // Pure White Editorial Surface
-    borderTopLeftRadius: theme.radii.lg,
-    borderTopRightRadius: theme.radii.lg,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    borderTopWidth: 1,
-    maxHeight: '88%',
-    paddingTop: 16,
-    ...theme.shadows.card,
+    backgroundColor: '#101114',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(15, 23, 42, 0.06)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
   },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  headerIconButton: {
+    padding: 6,
   },
-  modalHeaderTitle: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 13,
-    color: theme.colors.textPrimary,
-    letterSpacing: 0.5,
-  },
-  closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(15, 23, 42, 0.04)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#F8FAFC',
+    textAlign: 'center',
+    flex: 1,
+    paddingHorizontal: 12,
   },
   scrollBody: {
-    flexGrow: 1,
+    flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: 16,
     gap: 20,
   },
-  heroMediaContainer: {
+  heroImageBox: {
     width: '100%',
-    maxHeight: 480,
-    borderRadius: theme.radii.sm,
+    height: 280,
+    borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: 'rgba(15, 23, 42, 0.02)',
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    borderWidth: 1,
+    backgroundColor: '#181A20',
   },
-  heroMediaImage: {
+  heroImage: {
     width: '100%',
     height: '100%',
   },
-  heroVoicePlayerBox: {
-    backgroundColor: 'rgba(3, 105, 161, 0.05)',
-    borderColor: 'rgba(3, 105, 161, 0.15)',
+  heroTextBox: {
+    backgroundColor: '#181A20',
+    borderRadius: 14,
+    padding: 24,
+    minHeight: 180,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
     borderWidth: 1,
-    borderRadius: theme.radii.sm,
-    padding: 16,
-    gap: 12,
+    borderColor: 'rgba(255, 255, 255, 0.04)',
   },
-  heroVoiceTitle: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 12,
-    color: theme.colors.auroraCyan,
-    letterSpacing: 0.5,
+  heroTextContent: {
+    fontSize: 16,
+    color: '#F8FAFC',
+    lineHeight: 24,
+    fontWeight: '400',
   },
-  heroWaveformBars: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 45,
+  voiceMetaText: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 12,
   },
-  heroWaveformBar: {
-    flex: 1,
-    backgroundColor: theme.colors.auroraCyan,
-    borderRadius: 2,
-  },
-  sectionContainer: {
+  section: {
     gap: 8,
   },
   sectionLabel: {
     fontSize: 11,
-    fontFamily: theme.fonts.sansBold,
-    color: theme.colors.auroraAmber,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.8,
   },
-  tldrBox: {
-    backgroundColor: 'rgba(15, 23, 42, 0.02)',
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    borderWidth: 1,
-    borderRadius: theme.radii.sm,
-    padding: 14,
-  },
-  tldrTitle: {
-    fontFamily: theme.fonts.serif,
-    fontSize: 18,
-    color: theme.colors.textPrimary,
-    lineHeight: 22,
-    marginBottom: 4,
-  },
-  tldrText: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    lineHeight: 17,
-  },
-  tagsGrid: {
+  tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 8,
-    alignItems: 'center',
   },
-  addTagBtn: {
-    backgroundColor: '#EA580C', // Vibrant warm orange "+ Add tag" pill
+  addTagPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: theme.radii.full,
-  },
-  addTagText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 12,
-    color: '#FFFFFF',
-  },
-  addTagInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.04)',
-    borderColor: 'rgba(15, 23, 42, 0.1)',
+    gap: 4,
+    backgroundColor: '#222530',
     borderWidth: 1,
-    borderRadius: theme.radii.full,
-    paddingHorizontal: 12,
-    height: 34,
-    gap: 6,
-  },
-  addTagInput: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 12,
-    color: theme.colors.textPrimary,
-    minWidth: 90,
-  },
-  confirmTagBtn: {
-    backgroundColor: theme.colors.auroraEmerald,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tagPill: {
-    backgroundColor: 'rgba(15, 23, 42, 0.04)',
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: theme.radii.full,
+    borderRadius: 18,
   },
-  tagPillText: {
-    fontFamily: theme.fonts.sansMedium,
+  addTagPillText: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
+    fontWeight: '500',
+    color: '#F8FAFC',
   },
-  notesBox: {
-    backgroundColor: 'rgba(15, 23, 42, 0.02)',
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    borderWidth: 1,
-    borderRadius: theme.radii.sm,
-    padding: 14,
-    minHeight: 100,
-  },
-  notesInput: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 13,
-    color: theme.colors.textPrimary,
-    lineHeight: 19,
-    textAlignVertical: 'top',
-  },
-  buildSpecBanner: {
+  tagItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(109, 40, 217, 0.06)',
-    borderColor: 'rgba(109, 40, 217, 0.2)',
+    gap: 5,
+    backgroundColor: '#181A20',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 14,
     borderWidth: 1,
-    paddingVertical: 10,
-    borderRadius: theme.radii.sm,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
   },
-  buildSpecText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 11,
-    color: theme.colors.auroraPurple,
+  tagItemText: {
+    fontSize: 12,
+    color: '#CBD5E1',
   },
-  directoryPickerBox: {
-    backgroundColor: 'rgba(3, 105, 161, 0.04)',
-    borderColor: 'rgba(3, 105, 161, 0.15)',
+  notesContainer: {
+    backgroundColor: '#181A20',
+    borderRadius: 12,
+    padding: 14,
+    minHeight: 90,
     borderWidth: 1,
-    borderRadius: theme.radii.sm,
+    borderColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  notesInput: {
+    fontSize: 13,
+    color: '#F8FAFC',
+    lineHeight: 19,
+    minHeight: 60,
+    textAlignVertical: 'top',
+  },
+  directoryBox: {
+    backgroundColor: '#181A20',
+    borderRadius: 12,
     padding: 12,
     gap: 8,
   },
-  directoryPickerTitle: {
-    fontFamily: theme.fonts.sansBold,
+  directoryBoxLabel: {
     fontSize: 10,
-    color: theme.colors.auroraCyan,
-    letterSpacing: 0.8,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.5,
   },
   directoryChipsRow: {
     flexDirection: 'row',
@@ -474,85 +396,73 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   directoryChip: {
-    backgroundColor: '#FFFFFF',
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: theme.radii.xs,
+    borderRadius: 8,
   },
   directoryChipActive: {
-    backgroundColor: theme.colors.auroraCyan,
-    borderColor: theme.colors.auroraCyan,
+    backgroundColor: '#F8FAFC',
   },
   directoryChipText: {
-    fontFamily: theme.fonts.sansMedium,
     fontSize: 11,
-    color: theme.colors.textMuted,
+    color: '#CBD5E1',
   },
   directoryChipTextActive: {
-    color: '#FFFFFF',
-    fontFamily: theme.fonts.sansBold,
+    color: '#101114',
+    fontWeight: '600',
   },
-  bottomBar: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 30,
+  bottomDock: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(15, 23, 42, 0.06)',
-    gap: 12,
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  actionRow: {
-    flexDirection: 'row',
+    borderTopColor: 'rgba(255, 255, 255, 0.04)',
     gap: 10,
-    width: '100%',
   },
-  actionBtn: {
+  actionButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dockBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#F8FAFC',
-    borderColor: 'rgba(15, 23, 42, 0.08)',
+    gap: 6,
+    backgroundColor: '#181A20',
+    borderRadius: 20,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderRadius: theme.radii.full,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
-  actionBtnActive: {
-    backgroundColor: theme.colors.auroraIndigo,
-    borderColor: theme.colors.auroraIndigo,
+  dockBtnActive: {
+    borderColor: 'rgba(255, 255, 255, 0.25)',
   },
-  actionBtnText: {
-    fontFamily: theme.fonts.sansMedium,
-    fontSize: 13,
-    color: theme.colors.textPrimary,
+  dockBtnText: {
+    fontSize: 12,
+    color: '#CBD5E1',
+    fontWeight: '500',
   },
   deleteBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(190, 18, 60, 0.06)',
-    borderColor: 'rgba(190, 18, 60, 0.15)',
-    borderWidth: 1,
-    borderRadius: theme.radii.full,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    gap: 6,
+    backgroundColor: '#FFE4E6', // soft coral pill
+    borderRadius: 20,
+    paddingVertical: 10,
   },
   deleteBtnText: {
-    fontFamily: theme.fonts.sansBold,
-    fontSize: 13,
-    color: '#BE123C',
+    fontSize: 12,
+    color: '#E11D48',
+    fontWeight: '600',
   },
-  footerTimestamp: {
-    fontFamily: theme.fonts.sans,
+  footerTimeText: {
     fontSize: 11,
-    color: theme.colors.textMuted,
+    color: '#64748B',
     textAlign: 'center',
   },
 });

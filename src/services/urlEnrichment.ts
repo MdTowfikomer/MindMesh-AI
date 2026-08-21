@@ -1,7 +1,10 @@
 import { MemoryItem, MemoryType, UrlMetadata } from '../types/mindmesh';
+import { API_CONFIG } from '../config/api';
 
 export class URLEnrichmentService {
-  private static readonly BACKEND_ENRICH_URL = 'https://mindmesh-api.vercel.app/api/v1/enrich-url';
+  private static get ENRICH_URL_ENDPOINT(): string {
+    return `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.ENRICH_URL_ENDPOINT}`;
+  }
 
   /**
    * Helper to extract clean URL from shared text blurbs (e.g. "Check out this Instagram post https://instagram.com/p/...")
@@ -80,32 +83,52 @@ export class URLEnrichmentService {
     let scrapedTitle: string | null = null;
     let scrapedDescription: string | null = null;
 
-    // Stage 1: Quick Local OpenGraph Fetch Attempt
-    try {
-      const response = await fetch(cleanUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        },
-      });
-      const html = await response.text();
-
-      const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-      const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i);
-      const ogDescMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i);
-
-      if (ogImageMatch) scrapedImage = ogImageMatch[1];
-      if (ogTitleMatch) scrapedTitle = ogTitleMatch[1];
-      if (ogDescMatch) scrapedDescription = ogDescMatch[1];
-    } catch (e) {
-      console.log('[URLEnrichment] Local scrape attempt bypassed:', e);
+    // Special Instagram oEmbed fallback
+    if (domain.includes('instagram.com')) {
+      try {
+        const oembedRes = await fetch(`https://api.instagram.com/oembed?url=${encodeURIComponent(cleanUrl)}`);
+        if (oembedRes.ok) {
+          const oembed = await oembedRes.json();
+          if (oembed.thumbnail_url) scrapedImage = oembed.thumbnail_url;
+          if (oembed.title) scrapedTitle = oembed.title;
+          if (oembed.author_name) scrapedDescription = `Instagram post by @${oembed.author_name}`;
+        }
+      } catch (e) {
+        console.log('[URLEnrichment] Instagram oEmbed bypass:', e);
+      }
     }
 
-    // Stage 2: Server Enrichment Proxy Fallback (If local scrape incomplete)
+    // Stage 1: Quick Local OpenGraph Fetch Attempt
+    if (!scrapedImage || !scrapedTitle) {
+      try {
+        const response = await fetch(cleanUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          },
+        });
+        const html = await response.text();
+
+        const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+        const ogTitleMatch = html.match(/<meta[^>]*property=["']og:title["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:title["']/i);
+        const ogDescMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i);
+
+        if (ogImageMatch) scrapedImage = ogImageMatch[1];
+        if (ogTitleMatch) scrapedTitle = ogTitleMatch[1];
+        if (ogDescMatch) scrapedDescription = ogDescMatch[1];
+      } catch (e) {
+        console.log('[URLEnrichment] Local scrape attempt bypassed:', e);
+      }
+    }
+
+    // Stage 2: Server Enrichment Proxy Fallback with Auth Headers
     if (!scrapedImage || !scrapedDescription) {
       try {
-        const res = await fetch(this.BACKEND_ENRICH_URL, {
+        const res = await fetch(this.ENRICH_URL_ENDPOINT, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'x-app-key': API_CONFIG.APP_SECRET,
+          },
           body: JSON.stringify({ url: cleanUrl }),
         });
         const data = await res.json();

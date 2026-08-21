@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { MemoryItem, SmartSpace } from '../types/mindmesh';
-import { theme } from '../theme/tokens';
 import { Globe, Quote, Mic, Video, FileText, DollarSign, Image as ImageIcon, Tag, Bookmark } from './Icons';
 
 interface AutoStacksDrawerProps {
@@ -18,8 +17,6 @@ export const AutoStacksDrawer: React.FC<AutoStacksDrawerProps> = ({
   savedSmartSpaces,
   activeSearchQuery,
   onSelectStack,
-  onCreateSmartSpace,
-  onDeleteSmartSpace,
 }) => {
   // Dynamic volume-based auto stacks
   const stackCategories = [
@@ -46,7 +43,7 @@ export const AutoStacksDrawer: React.FC<AutoStacksDrawerProps> = ({
               onPress={() => onSelectStack(isActive ? '' : stack.query)}
               activeOpacity={0.7}
             >
-              <IconComp size={11} color={isActive ? '#FFF' : theme.colors.textMuted} />
+              <IconComp size={11} color={isActive ? '#101114' : '#94A3B8'} />
               <Text style={[styles.pillText, isActive && styles.pillTextActive]}>{stack.name}</Text>
               <Text style={[styles.pillCount, isActive && styles.pillCountActive]}>{stack.count}</Text>
             </TouchableOpacity>
@@ -57,7 +54,7 @@ export const AutoStacksDrawer: React.FC<AutoStacksDrawerProps> = ({
       {/* Saved Smart Spaces — only show if any exist */}
       {savedSmartSpaces.length > 0 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollRow}>
-          <Bookmark size={10} color={theme.colors.textDim} />
+          <Bookmark size={10} color="#64748B" />
           {savedSmartSpaces.map((space) => {
             const isActive = activeSearchQuery === space.query;
             return (
@@ -67,7 +64,7 @@ export const AutoStacksDrawer: React.FC<AutoStacksDrawerProps> = ({
                 onPress={() => onSelectStack(isActive ? '' : space.query)}
                 activeOpacity={0.7}
               >
-                <Tag size={9} color={isActive ? '#FFF' : theme.colors.textSecondary} />
+                <Tag size={9} color={isActive ? '#101114' : '#94A3B8'} />
                 <Text style={[styles.spaceText, isActive && styles.spaceTextActive]}>{space.name}</Text>
               </TouchableOpacity>
             );
@@ -93,29 +90,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: theme.colors.surfaceSubtle,
+    backgroundColor: '#181A20',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 14,
   },
   pillActive: {
-    backgroundColor: theme.colors.textPrimary,
+    backgroundColor: '#F8FAFC',
+    borderColor: '#F8FAFC',
   },
   pillText: {
     fontSize: 11,
-    fontFamily: theme.fonts.sansMedium,
-    color: theme.colors.textSecondary,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   pillTextActive: {
-    color: '#FFF',
+    color: '#101114',
+    fontWeight: '600',
   },
   pillCount: {
     fontSize: 9,
-    fontFamily: theme.fonts.sansBold,
-    color: theme.colors.textDim,
+    fontWeight: '600',
+    color: '#64748B',
   },
   pillCountActive: {
-    color: 'rgba(255, 255, 255, 0.6)',
+    color: '#64748B',
   },
   spacePill: {
     flexDirection: 'row',
@@ -123,18 +124,21 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 9,
     paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: 'rgba(79, 70, 229, 0.06)',
+    borderRadius: 12,
+    backgroundColor: '#181A20',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   spacePillActive: {
-    backgroundColor: theme.colors.auroraIndigo,
+    backgroundColor: '#F8FAFC',
   },
   spaceText: {
     fontSize: 10,
-    fontFamily: theme.fonts.sansMedium,
-    color: theme.colors.textSecondary,
+    color: '#94A3B8',
+    fontWeight: '500',
   },
   spaceTextActive: {
-    color: '#FFF',
+    color: '#101114',
+    fontWeight: '600',
   },
 });

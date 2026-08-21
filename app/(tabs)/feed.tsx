@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMemoryStore } from '../../src/stores/memoryStore';
 import { MemoryCard } from '../../src/components/MemoryCard';
 import { CaptureBar } from '../../src/components/CaptureBar';
@@ -14,12 +15,12 @@ import { VisionAIService } from '../../src/services/visionAI';
 import { ShareIntentService } from '../../src/services/shareIntent';
 import { MemoryDetailModal } from '../../src/components/MemoryDetailModal';
 import { SavingSkeletonCard } from '../../src/components/SavingSkeletonCard';
-import { theme } from '../../src/theme/tokens';
-import { Search, Sparkles, X, CheckCircle2 } from '../../src/components/Icons';
+import { SpotlightCommandPalette } from '../../src/components/SpotlightCommandPalette';
+import { CyberTheme } from '../../src/theme/cyberLuxury';
+import { Search, Sparkles, CheckCircle2, AlertCircle } from '../../src/components/Icons';
+import { RemoteLogger } from '../../src/services/logger';
 
 export default function FeedScreen() {
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-
   const {
     memories,
     trash,
@@ -46,41 +47,73 @@ export default function FeedScreen() {
     deleteSmartSpace,
     openMemoryDetail,
     addMemory,
+    triggerSynapticFusion,
     isSaving,
     setIsSaving,
+    toastMessage,
+    toastType,
+    showToast,
   } = useMemoryStore();
 
-  // Listen for native Android inbound share intents from external apps (Instagram, LinkedIn, Twitter/X, Gallery)
+  // Listen for native Android inbound share intents from external apps (Screenshots, Gallery, Instagram, Twitter/X)
   useEffect(() => {
     const handleSharedContent = async (data: string, type: 'text' | 'image') => {
+      console.log('[FeedScreen] 📥 Incoming shared content:', { type, data: data.slice(0, 100) });
       setIsSaving(true);
       try {
         if (type === 'image') {
           // Copy content:// to cache for readability, then analyze with Gemini Vision
-          const cachedUri = await ShareIntentService.copyToCache(data);
+          let cachedUri = data;
+          try {
+            cachedUri = await ShareIntentService.copyToCache(data);
+          } catch (copyError: any) {
+            console.warn('[FeedScreen] Failed to copy to cache, proceeding with original URI:', copyError);
+            RemoteLogger.warn('Failed to copy shared content URI to cache', { error: copyError?.message, uri: data }, 'ShareIntent');
+          }
+
           const visionResult = await VisionAIService.analyzeImage(cachedUri);
+          console.log('[FeedScreen] 📸 Screenshot Vision Result:', {
+            title: visionResult.title,
+            tags: visionResult.tags,
+            classification: visionResult.classification,
+          });
           addMemory({
             type: visionResult.classification || 'image',
-            title: visionResult.title,
-            content: visionResult.tldr || 'Shared image',
+            title: visionResult.title || 'Saved Screenshot',
+            content: visionResult.tldr || visionResult.ocrText || 'Captured visual screenshot',
             imageUrl: cachedUri,
             ocrText: visionResult.ocrText,
-            tags: visionResult.tags,
-            contextSpace: visionResult.tags[0] || 'Gallery',
+            tags: visionResult.tags.length > 0 ? visionResult.tags : ['Screenshot'],
+            contextSpace: visionResult.tags[0] || 'Screenshot',
             confidenceScore: visionResult.confidenceScore,
           });
-          setToastMessage(`✨ AI analyzed shared photo & added ${visionResult.tags.length} smart tags!`);
+          triggerSynapticFusion();
+          showToast(`✨ AI analyzed screenshot & added ${visionResult.tags.length} smart tags!`, 'success');
         } else {
           // Text/URL — enrich with scraper
           const enriched = await URLEnrichmentService.enrichUrlAsync(data);
           addMemory(enriched);
-          setToastMessage('✨ Saved visual post card from shared link!');
+          triggerSynapticFusion();
+          showToast('✨ Saved visual post card from shared link!', 'success');
         }
-      } catch (e) {
-        console.warn('[FeedScreen] Share intent handling error:', e);
+      } catch (e: any) {
+        console.error('[FeedScreen] Share intent handling error:', e);
+        if (type === 'image') {
+          RemoteLogger.error('Image cannot be able to uploaded from external platform share', {
+            error: e?.message || String(e),
+            stack: e?.stack,
+            sharedUri: data,
+            platform: 'Android Share Intent',
+          }, 'ShareIntentReceiver');
+          showToast('Image cannot be able to uploaded', 'error');
+        } else {
+          RemoteLogger.error('Failed to process incoming shared link', {
+            error: e?.message || String(e),
+            sharedData: data,
+          }, 'ShareIntentReceiver');
+        }
       } finally {
         setIsSaving(false);
-        setTimeout(() => setToastMessage(null), 3500);
       }
     };
 
@@ -103,7 +136,7 @@ export default function FeedScreen() {
     return unsubscribe;
   }, []);
 
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSpotlightVisible, setIsSpotlightVisible] = useState(false);
   const [isShareSimulatorVisible, setIsShareSimulatorVisible] = useState(false);
 
   // Multi-stage Advanced Search System Engine Filtering
@@ -138,47 +171,35 @@ export default function FeedScreen() {
     addMemory(enriched);
   }, [addMemory]);
 
-  const handleSearchFocus = useCallback(() => {
-    setIsSearchFocused(true);
-  }, []);
-
-  const handleSearchBlur = useCallback(() => {
-    // Keep stacks visible while there's a query
-    if (searchQuery.trim().length === 0) {
-      setIsSearchFocused(false);
-    }
-  }, [searchQuery]);
-
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery('');
-    setIsSearchFocused(false);
-  }, [setSearchQuery]);
-
   return (
-    <View style={styles.container}>
-      {/* Clean minimal search bar */}
-      <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
-          <Search size={15} color={theme.colors.textDim} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search your mind..."
-            placeholderTextColor={theme.colors.textDim}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onFocus={handleSearchFocus}
-            onBlur={handleSearchBlur}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={handleClearSearch} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <X size={14} color={theme.colors.textMuted} />
-            </TouchableOpacity>
-          )}
-        </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Clean Screen Title */}
+      <View style={styles.headerTitleRow}>
+        <Text style={styles.screenTitle}>Memory Feed</Text>
       </View>
 
-      {/* Stacks & Smart Spaces — only visible on search focus or active query */}
-      {(isSearchFocused || searchQuery.trim().length > 0) && (
+      {/* 21st.dev Style Spotlight Search Bar Trigger */}
+      <View style={styles.searchSection}>
+        <TouchableOpacity
+          style={styles.searchBar}
+          activeOpacity={0.8}
+          onPress={() => {
+            CyberTheme.haptics.light();
+            setIsSpotlightVisible(true);
+          }}
+        >
+          <Search size={16} color="#94A3B8" />
+          <Text style={styles.searchPlaceholder}>
+            {searchQuery ? searchQuery : 'Search your mind...'}
+          </Text>
+          <View style={styles.spotlightBadge}>
+            <Sparkles size={12} color="#94A3B8" />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Stacks & Smart Spaces — visible when active query exists */}
+      {searchQuery.trim().length > 0 && (
         <AutoStacksDrawer
           memories={memories}
           savedSmartSpaces={savedSmartSpaces}
@@ -220,7 +241,7 @@ export default function FeedScreen() {
 
         {filteredMemories.length === 0 && (
           <View style={styles.emptyState}>
-            <Sparkles size={28} color={theme.colors.textDim} />
+            <Sparkles size={28} color="#64748B" />
             <Text style={styles.emptyTitle}>Nothing here yet</Text>
             <Text style={styles.emptySub}>Save a thought, screenshot, or link to get started.</Text>
           </View>
@@ -256,96 +277,144 @@ export default function FeedScreen() {
         onReceiveContent={handleInboundShareReceive}
       />
 
-      {/* Toast Notification Banner */}
+      {/* Toast Notification Banner (Message Sandwich) */}
       {toastMessage && (
-        <View style={styles.toastBanner}>
-          <CheckCircle2 size={16} color="#10B981" />
-          <Text style={styles.toastText}>{toastMessage}</Text>
+        <View
+          style={[
+            styles.toastBanner,
+            toastType === 'error' && styles.toastBannerError,
+          ]}
+        >
+          {toastType === 'error' ? (
+            <AlertCircle size={16} color="#F87171" />
+          ) : (
+            <CheckCircle2 size={16} color="#10B981" />
+          )}
+          <Text
+            style={[
+              styles.toastText,
+              toastType === 'error' && styles.toastTextError,
+            ]}
+          >
+            {toastMessage}
+          </Text>
         </View>
       )}
+
+      {/* Spotlight Command Palette (21st.dev Style) */}
+      <SpotlightCommandPalette
+        visible={isSpotlightVisible}
+        onClose={() => setIsSpotlightVisible(false)}
+        memories={memories}
+        onSelectMemory={handleCardPress}
+      />
 
       {/* Floating Capture Bar */}
       <MemoryDetailModal />
       <CaptureBar />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.bg,
+    backgroundColor: '#101114',
+  },
+  headerTitleRow: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    letterSpacing: -0.3,
   },
   toastBanner: {
     position: 'absolute',
-    top: 60,
-    left: 20,
-    right: 20,
-    backgroundColor: '#0F172A',
+    top: 50,
+    left: 16,
+    right: 16,
+    backgroundColor: '#181A20',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 24,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     zIndex: 999,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
+  },
+  toastBannerError: {
+    backgroundColor: '#1C1316',
+    borderColor: 'rgba(239, 68, 68, 0.35)',
   },
   toastText: {
-    fontFamily: theme.fonts.sansBold,
     fontSize: 12,
-    color: '#FFFFFF',
+    fontWeight: '500',
+    color: '#E2E8F0',
+  },
+  toastTextError: {
+    color: '#FCA5A5',
+    fontWeight: '600',
   },
   searchSection: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingTop: 8,
     paddingBottom: 12,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.surfaceSubtle,
-    borderRadius: theme.radii.full,
+    justifyContent: 'space-between',
+    backgroundColor: '#181A20',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.06)',
     paddingHorizontal: 14,
-    height: 40,
-    gap: 8,
+    height: 44,
   },
-  searchInput: {
+  searchPlaceholder: {
     flex: 1,
-    fontFamily: theme.fonts.sans,
-    fontSize: 14,
-    color: theme.colors.textPrimary,
-    letterSpacing: theme.tracking.normal,
+    marginLeft: 8,
+    fontSize: 13,
+    color: '#64748B',
+    fontWeight: '400',
+  },
+  spotlightBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 6,
+    padding: 4,
   },
   masonryScrollContent: {
-    paddingHorizontal: 6,
-    paddingBottom: 90,
-    paddingTop: 2,
+    paddingHorizontal: 8,
+    paddingBottom: 100,
+    paddingTop: 4,
   },
   masonryGrid: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 8,
   },
   masonryColumn: {
     flex: 1,
   },
   emptyState: {
-    paddingVertical: 80,
+    paddingVertical: 100,
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   emptyTitle: {
-    fontFamily: theme.fonts.sansMedium,
-    fontSize: 15,
-    color: theme.colors.textSecondary,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F8FAFC',
   },
   emptySub: {
-    fontFamily: theme.fonts.sans,
     fontSize: 13,
-    color: theme.colors.textMuted,
+    color: '#64748B',
+    textAlign: 'center',
+    maxWidth: 240,
   },
 });

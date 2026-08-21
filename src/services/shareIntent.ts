@@ -9,50 +9,67 @@ export class ShareIntentService {
   private static lastProcessedUrl: string | null = null;
 
   /**
+   * Safely parses deep link URLs into structured shared content
+   */
+  static parseUrl(url: string): { type: 'text' | 'image' | null; data: string | null } {
+    try {
+      if (!url) return { type: null, data: null };
+
+      if (url.includes('sharedImage=')) {
+        const raw = url.split('sharedImage=')[1]?.split('&')[0];
+        if (raw) {
+          let decoded = raw;
+          try {
+            decoded = decodeURIComponent(raw);
+          } catch {
+            decoded = raw;
+          }
+          return { type: 'image', data: decoded };
+        }
+      }
+
+      if (url.includes('sharedText=')) {
+        const raw = url.split('sharedText=')[1]?.split('&')[0];
+        if (raw) {
+          let decoded = raw;
+          try {
+            decoded = decodeURIComponent(raw);
+          } catch {
+            decoded = raw;
+          }
+          return { type: 'text', data: decoded };
+        }
+      }
+
+      // Direct file:// or content:// or image URLs
+      if (url.startsWith('file://') || url.startsWith('content://') || url.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) {
+        return { type: 'image', data: url };
+      }
+
+      // Direct Web URLs
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return { type: 'text', data: url };
+      }
+
+      return { type: null, data: null };
+    } catch {
+      return { type: null, data: null };
+    }
+  }
+
+  /**
    * Check if the app was opened via a share intent and extract shared data
    */
   static async getSharedContent(): Promise<{ type: 'text' | 'image' | null; data: string | null }> {
     try {
       const initialUrl = await Linking.getInitialURL();
 
-      if (!initialUrl) {
-        return { type: null, data: null };
-      }
-
-      // Avoid processing the same URL twice
-      if (initialUrl === this.lastProcessedUrl) {
+      if (!initialUrl || initialUrl === this.lastProcessedUrl) {
         return { type: null, data: null };
       }
       this.lastProcessedUrl = initialUrl;
 
-      // Parse deep link query params (e.g. mindmesh://feed?sharedImage=content%3A%2F%2F...)
-      if (initialUrl.includes('sharedImage=')) {
-        const match = initialUrl.match(/sharedImage=([^&]+)/);
-        if (match) {
-          const imageUri = decodeURIComponent(match[1]);
-          return { type: 'image', data: imageUri };
-        }
-      }
-
-      if (initialUrl.includes('sharedText=')) {
-        const match = initialUrl.match(/sharedText=([^&]+)/);
-        if (match) {
-          const text = decodeURIComponent(match[1]);
-          return { type: 'text', data: text };
-        }
-      }
-
-      // Direct content:// URI (shared image directly)
-      if (initialUrl.startsWith('content://') || initialUrl.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) {
-        return { type: 'image', data: initialUrl };
-      }
-
-      // Direct URL (shared link)
-      if (initialUrl.startsWith('http://') || initialUrl.startsWith('https://')) {
-        return { type: 'text', data: initialUrl };
-      }
-
-      return { type: null, data: null };
+      return this.parseUrl(initialUrl);
     } catch (error) {
       console.warn('[ShareIntentService] Error getting shared content:', error);
       return { type: null, data: null };
@@ -64,6 +81,10 @@ export class ShareIntentService {
    */
   static async copyToCache(contentUri: string): Promise<string> {
     try {
+      // If already a local file path, return immediately
+      if (contentUri.startsWith('file://') || !contentUri.startsWith('content://')) {
+        return contentUri;
+      }
       const filename = `shared_${Date.now()}.jpg`;
       const destination = `${cacheDirectory}${filename}`;
       await copyAsync({ from: contentUri, to: destination });
@@ -82,28 +103,9 @@ export class ShareIntentService {
       if (!event.url || event.url === this.lastProcessedUrl) return;
       this.lastProcessedUrl = event.url;
 
-      // Parse deep link params
-      if (event.url.includes('sharedImage=')) {
-        const match = event.url.match(/sharedImage=([^&]+)/);
-        if (match) {
-          callback('image', decodeURIComponent(match[1]));
-          return;
-        }
-      }
-
-      if (event.url.includes('sharedText=')) {
-        const match = event.url.match(/sharedText=([^&]+)/);
-        if (match) {
-          callback('text', decodeURIComponent(match[1]));
-          return;
-        }
-      }
-
-      // Direct URIs
-      if (event.url.startsWith('content://') || event.url.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) {
-        callback('image', event.url);
-      } else if (event.url.startsWith('http://') || event.url.startsWith('https://')) {
-        callback('text', event.url);
+      const parsed = this.parseUrl(event.url);
+      if (parsed.type && parsed.data) {
+        callback(parsed.type, parsed.data);
       }
     });
 

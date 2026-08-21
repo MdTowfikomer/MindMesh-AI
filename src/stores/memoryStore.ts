@@ -3,6 +3,7 @@ import { MemoryItem, SerendipityConnection, BuildPlan, UserStats, SmartSpace } f
 import { seedMemories, seedBuildPlan } from '../data/seedMemories';
 import { SerendipityEngine } from '../services/serendipityEngine';
 import { SQLiteDatabaseService } from '../services/sqliteDatabase';
+import { SoundEffects } from '../services/soundEffects';
 
 interface MemoryStoreState {
   memories: MemoryItem[]; // Active non-deleted memories
@@ -64,7 +65,13 @@ interface MemoryStoreState {
   loadStoredMemories: () => Promise<void>;
   isSaving: boolean;
   setIsSaving: (saving: boolean) => void;
+  toastMessage: string | null;
+  toastType: 'success' | 'error' | null;
+  showToast: (message: string, type?: 'success' | 'error', durationMs?: number) => void;
+  hideToast: () => void;
 }
+
+let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useMemoryStore = create<MemoryStoreState>((set) => ({
   memories: seedMemories.filter((m) => !m.deletedAt),
@@ -74,6 +81,21 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   activeBuildPlan: seedBuildPlan,
   isSaving: false,
   setIsSaving: (saving: boolean) => set({ isSaving: saving }),
+  toastMessage: null,
+  toastType: null,
+
+  showToast: (message: string, type: 'success' | 'error' = 'success', durationMs = 3500) => {
+    if (toastTimer) clearTimeout(toastTimer);
+    set({ toastMessage: message, toastType: type });
+    toastTimer = setTimeout(() => {
+      set({ toastMessage: null, toastType: null });
+    }, durationMs);
+  },
+
+  hideToast: () => {
+    if (toastTimer) clearTimeout(toastTimer);
+    set({ toastMessage: null, toastType: null });
+  },
 
   loadStoredMemories: async () => {
     try {
@@ -124,6 +146,7 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   },
 
   addMemory: (memoryData) => {
+    SoundEffects.playSaveSound();
     const newMemory: MemoryItem = {
       ...memoryData,
       id: `mem-${Date.now()}`,
@@ -298,16 +321,14 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
 
   generateConnections: async () => {
     const state = useMemoryStore.getState();
-    // Only analyze user-uploaded memories (not seed data)
-    // User memories have IDs like "mem-1723456789" (timestamp), seed data has "mem-article-1", "mem-quote-1" etc.
-    const userMemories = state.memories.filter(m => /^mem-\d+$/.test(m.id));
-    if (userMemories.length < 2 || state.isGeneratingConnections) return;
+    const allMemories = state.memories;
+    if (allMemories.length < 2 || state.isGeneratingConnections) return;
 
     set({ isGeneratingConnections: true, isSynapticFusing: true });
 
     try {
-      // Stage 1: Fast discovery — title + 2 paragraphs only
-      const connection = await SerendipityEngine.discoverConnection(userMemories);
+      // Stage 1: Fast discovery — title + guidance
+      const connection = await SerendipityEngine.discoverConnection(allMemories);
       if (connection) {
         set((s) => ({
           connections: [connection, ...s.connections],

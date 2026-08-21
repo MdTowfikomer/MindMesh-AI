@@ -1,190 +1,203 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, Text } from 'react-native';
-import { theme } from '../theme/tokens';
-import { Sparkles, Zap } from './Icons';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface SynapticFusionProps {
   isVisible: boolean;
   onAnimationComplete?: () => void;
 }
 
-export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible, onAnimationComplete }) => {
-  const pulseAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.7)).current;
-  const particleRotate = useRef(new Animated.Value(0)).current;
+export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const auraScaleAnim = useRef(new Animated.Value(1)).current;
+  const auraRotateAnim = useRef(new Animated.Value(0)).current;
+  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (isVisible) {
-      Animated.parallel([
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 2200,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 5,
-          tension: 80,
-          useNativeDriver: true,
-        }),
-        Animated.loop(
-          Animated.timing(particleRotate, {
-            toValue: 1,
-            duration: 3000,
-            useNativeDriver: true,
-          })
-        ),
-      ]).start(() => {
-        if (onAnimationComplete) onAnimationComplete();
-      });
+      // Fade in
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }).start();
+
+      // Flowing swirl & breathing pulse loop
+      pulseLoopRef.current = Animated.loop(
+        Animated.parallel([
+          Animated.sequence([
+            Animated.timing(auraScaleAnim, {
+              toValue: 1.12,
+              duration: 2200,
+              useNativeDriver: true,
+            }),
+            Animated.timing(auraScaleAnim, {
+              toValue: 1,
+              duration: 2200,
+              useNativeDriver: true,
+            }),
+          ]),
+          Animated.sequence([
+            Animated.timing(auraRotateAnim, {
+              toValue: 1,
+              duration: 4400,
+              useNativeDriver: true,
+            }),
+            Animated.timing(auraRotateAnim, {
+              toValue: 0,
+              duration: 4400,
+              useNativeDriver: true,
+            }),
+          ]),
+        ])
+      );
+      pulseLoopRef.current.start();
     } else {
-      pulseAnim.setValue(0);
-      scaleAnim.setValue(0.7);
-      particleRotate.setValue(0);
+      if (pulseLoopRef.current) {
+        pulseLoopRef.current.stop();
+      }
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
     }
   }, [isVisible]);
 
   if (!isVisible) return null;
 
-  const rotate = particleRotate.interpolate({
+  const rotateInterpolation = auraRotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
-
-  const opacity = pulseAnim.interpolate({
-    inputRange: [0, 0.15, 0.85, 1],
-    outputRange: [0, 1, 1, 0],
+    outputRange: ['-5deg', '5deg'],
   });
 
   return (
-    <Animated.View style={[styles.darkPortalOverlay, { opacity }]}>
-      {/* Radiant Dark Portal Card */}
-      <Animated.View style={[styles.fusionPortalCard, { transform: [{ scale: scaleAnim }] }]}>
-        {/* Neon Particle Threads */}
-        <Animated.View style={[styles.particleRing, { transform: [{ rotate }] }]}>
-          <View style={styles.neonParticle1} />
-          <View style={styles.neonParticle2} />
-          <View style={styles.neonParticle3} />
-        </Animated.View>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      {/* 1. Base Gradient Canvas (Black Current #12142E to Clear Hanada #4C3894) */}
+      <LinearGradient
+        colors={['#090A14', '#12142E', '#251E4E', '#4C3894', '#6D5BB5']}
+        locations={[0, 0.35, 0.6, 0.85, 1.0]}
+        start={{ x: 0.5, y: 0.0 }}
+        end={{ x: 0.5, y: 1.0 }}
+        style={StyleSheet.absoluteFillObject}
+      />
 
-        <View style={styles.iconContainer}>
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            <Sparkles size={36} color="#C084FC" />
-          </Animated.View>
+      {/* 2. High-Res Flow Swirl Image Texture */}
+      <Animated.Image
+        source={require('../../assets/feralui_flow_gradient.png')}
+        style={[
+          styles.flowImageOverlay,
+          {
+            transform: [
+              { scale: auraScaleAnim },
+              { rotate: rotateInterpolation },
+            ],
+          },
+        ]}
+        resizeMode="cover"
+      />
+
+      {/* 3. Subtle Dark Vignette for Text Legibility */}
+      <LinearGradient
+        colors={['rgba(9, 10, 20, 0.75)', 'transparent', 'rgba(18, 20, 46, 0.4)']}
+        locations={[0, 0.45, 1.0]}
+        style={StyleSheet.absoluteFillObject}
+      />
+
+      {/* 4. Serendipity Discovery Content */}
+      <View style={styles.contentWrapper}>
+        <Text style={styles.tagHeader}>SYNTHESIZING MEMORIES</Text>
+
+        <Text style={styles.heroHeadline}>
+          Connecting the dots{'\n'}across your mind
+        </Text>
+
+        <Text style={styles.bodySubtitle}>
+          Uncovering hidden relationships across your saved thoughts, screenshots, and links to spark new ideas.
+        </Text>
+
+        {/* Translucent Frosted Loading Capsule */}
+        <View style={styles.loadingPill}>
+          <ActivityIndicator size="small" color="#FFFFFF" />
+          <Text style={styles.loadingPillText}>DISCOVERING CONNECTIONS...</Text>
         </View>
-        
-        <View style={styles.textColumn}>
-          <View style={styles.badgeRow}>
-            <Zap size={12} color="#38BDF8" />
-            <Text style={styles.fusionTitle}>SYNAPTIC FUSION REVEAL</Text>
-          </View>
-          <Text style={styles.fusionSub}>
-            Physically converging connected thoughts into executable Build Plans...
-          </Text>
-        </View>
-      </Animated.View>
+      </View>
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  darkPortalOverlay: {
+  container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(7, 10, 16, 0.95)', // Deep obsidian dark portal backdrop
+    zIndex: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 999,
+    backgroundColor: '#090A14',
   },
-  fusionPortalCard: {
-    backgroundColor: '#111827',
-    borderColor: '#8B5CF6',
-    borderWidth: 1.5,
-    borderRadius: theme.radii.lg,
-    paddingHorizontal: 24,
-    paddingVertical: 22,
-    flexDirection: 'row',
+  flowImageOverlay: {
+    position: 'absolute',
+    width: SCREEN_WIDTH * 1.3,
+    height: SCREEN_HEIGHT * 1.1,
+    opacity: 0.85,
+  },
+  contentWrapper: {
+    paddingHorizontal: 28,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 16,
-    maxWidth: '88%',
-    shadowColor: '#8B5CF6',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 8,
-    position: 'relative',
-    overflow: 'hidden',
+    maxWidth: 420,
+    zIndex: 10,
   },
-  particleRing: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    top: -50,
-    left: -50,
+  tagHeader: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(215, 220, 245, 0.75)',
+    letterSpacing: 2.2,
+    textAlign: 'center',
   },
-  neonParticle1: {
-    position: 'absolute',
-    top: 20,
-    left: 40,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#C084FC',
-    shadowColor: '#C084FC',
-    shadowRadius: 10,
-    shadowOpacity: 0.9,
+  heroHeadline: {
+    fontSize: 34,
+    fontFamily: 'serif',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    lineHeight: 42,
+    fontWeight: '400',
+    letterSpacing: -0.5,
   },
-  neonParticle2: {
-    position: 'absolute',
-    bottom: 30,
-    right: 50,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#38BDF8',
-    shadowColor: '#38BDF8',
-    shadowRadius: 8,
-    shadowOpacity: 0.9,
+  bodySubtitle: {
+    fontSize: 14,
+    color: 'rgba(235, 240, 255, 0.85)',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 12,
+    marginTop: 4,
   },
-  neonParticle3: {
-    position: 'absolute',
-    top: 90,
-    right: 20,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-    backgroundColor: '#34D399',
-    shadowColor: '#34D399',
-    shadowRadius: 8,
-    shadowOpacity: 0.9,
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(192, 132, 252, 0.15)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  textColumn: {
-    flex: 1,
-  },
-  badgeRow: {
+  loadingPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
+    gap: 10,
+    marginTop: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
-  fusionTitle: {
-    fontFamily: theme.fonts.sansBold,
+  loadingPillText: {
     fontSize: 12,
-    color: '#C084FC',
-    letterSpacing: 1.2,
-  },
-  fusionSub: {
-    fontFamily: theme.fonts.sans,
-    fontSize: 12,
-    color: '#94A3B8',
-    lineHeight: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: 0.8,
   },
 });

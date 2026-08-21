@@ -3,8 +3,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMemoryStore } from '../../src/stores/memoryStore';
 import { RediscoverySwipeDeck } from '../../src/components/RediscoverySwipeDeck';
-import { theme } from '../../src/theme/tokens';
-import { Sparkles } from '../../src/components/Icons';
 
 export default function SerendipityScreen() {
   const { memories, deleteMemory } = useMemoryStore();
@@ -13,19 +11,20 @@ export default function SerendipityScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Sparkles size={18} color={theme.colors.auroraPurple} />
-        <Text style={styles.headerTitle}>Serendipity</Text>
+        <Text style={styles.headerTitle}>Rediscovery</Text>
+        <Text style={styles.headerSub}>
+          Review, curate, or clear thoughts from your mind vault one card at a time.
+        </Text>
       </View>
-      <Text style={styles.headerSub}>
-        Rediscover forgotten gems. Swipe right to keep, left to discard.
-      </Text>
 
-      {/* Swipe Deck */}
-      <RediscoverySwipeDeck
-        memories={memories}
-        onKeepMemory={() => {}}
-        onTrashMemory={(mem) => deleteMemory(mem.id)}
-      />
+      {/* Rediscovery Deck Canvas */}
+      <View style={styles.deckCanvas}>
+        <RediscoverySwipeDeck
+          memories={memories}
+          onKeepMemory={() => {}}
+          onTrashMemory={(mem) => deleteMemory(mem.id)}
+        />
+      </View>
     </SafeAreaView>
   );
 }
@@ -33,26 +32,28 @@ export default function SerendipityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.bg,
+    backgroundColor: '#101114',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.04)',
+    gap: 4,
   },
   headerTitle: {
-    fontFamily: theme.fonts.serif,
-    fontSize: 22,
-    color: theme.colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    letterSpacing: -0.2,
   },
   headerSub: {
-    fontFamily: theme.fonts.sans,
     fontSize: 12,
-    color: theme.colors.textMuted,
-    paddingHorizontal: 16,
-    marginTop: 4,
-    marginBottom: 16,
+    color: '#64748B',
+    lineHeight: 16,
+  },
+  deckCanvas: {
+    flex: 1,
   },
 });

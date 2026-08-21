@@ -11,6 +11,14 @@ export const Sparkles: React.FC<IconProps> = ({ size = 18, color = '#FFF', style
   <Feather name="compass" size={size} color={color} style={style} />
 );
 
+export const Circle: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="circle" size={size} color={color} style={style} />
+);
+
+export const ChevronRight: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="chevron-right" size={size} color={color} style={style} />
+);
+
 export const Compass: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
   <Feather name="compass" size={size} color={color} style={style} />
 );
@@ -197,4 +205,12 @@ export const AlertCircle: React.FC<IconProps> = ({ size = 18, color = '#FFF', st
 
 export const Image: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
   <Feather name="image" size={size} color={color} style={style} />
+);
+
+export const MoreHorizontal: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="more-horizontal" size={size} color={color} style={style} />
+);
+
+export const ChevronUp: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="chevron-up" size={size} color={color} style={style} />
 );

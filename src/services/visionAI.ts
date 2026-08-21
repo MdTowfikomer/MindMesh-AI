@@ -1,6 +1,7 @@
-import { readAsStringAsync, EncodingType } from 'expo-file-system/legacy';
+import { readAsStringAsync, copyAsync, cacheDirectory, EncodingType } from 'expo-file-system/legacy';
 import { API_CONFIG } from '../config/api';
 import { MemoryType } from '../types/mindmesh';
+import { RemoteLogger } from './logger';
 
 export interface VisionAnalysisResult {
   title: string;
@@ -28,19 +29,35 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
 
   static async analyzeImage(imageUri: string): Promise<VisionAnalysisResult> {
     try {
+      let resolvedUri = imageUri;
+
+      // If content:// URI, copy to local cache directory so base64 read never fails
+      if (imageUri.startsWith('content://')) {
+        try {
+          const filename = `vision_${Date.now()}.jpg`;
+          const cachePath = `${cacheDirectory}${filename}`;
+          await copyAsync({ from: imageUri, to: cachePath });
+          resolvedUri = cachePath;
+        } catch (copyErr) {
+          console.warn('[VisionAI] Failed to copy content URI to cache:', copyErr);
+        }
+      }
+
       // Read image as base64
-      const base64 = await readAsStringAsync(imageUri, {
+      const base64 = await readAsStringAsync(resolvedUri, {
         encoding: EncodingType.Base64,
       });
 
       const mimeType = this.getMimeType(imageUri);
       const url = `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.VISION_ENDPOINT}`;
 
+      console.log(`[VisionAI] 📤 Sending image to proxy (Size: ${Math.round(base64.length / 1024)} KB, MIME: ${mimeType})`);
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-app-key': API_CONFIG.APP_SECRET,
+          'x-app-key': API_CONFIG.APP_SECRET || 'SHIPATHON',
         },
         body: JSON.stringify({
           prompt: this.PROMPT,
@@ -49,27 +66,45 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
         }),
       });
 
+      console.log(`[VisionAI] 📥 Response Status: ${response.status}`);
+
       if (!response.ok) {
-        console.warn('VisionAI: Proxy error', response.status);
+        console.warn(`[VisionAI] ⚠️ Proxy returned HTTP ${response.status}`);
+        RemoteLogger.warn(`Vision AI proxy returned HTTP ${response.status}`, { imageUri: resolvedUri, status: response.status }, 'VisionAI');
         return this.getFallbackResult();
       }
 
       const data = await response.json();
       if (!data.success || !data.text) {
+        console.warn('[VisionAI] ⚠️ Proxy returned unsuccessful or empty response:', data);
+        RemoteLogger.warn('Vision AI proxy returned empty/unsuccessful response', { imageUri: resolvedUri, data }, 'VisionAI');
         return this.getFallbackResult();
       }
 
-      return this.parseResponse(data.text);
-    } catch (error) {
-      console.warn('VisionAI: Failed to analyze image', error);
-      return this.getFallbackResult();
+      console.log(`[VisionAI] 📄 Raw AI Response (${data.modelUsed}):`, data.text.replace(/\n/g, ' '));
+      const parsed = this.parseResponse(data.text);
+      console.log(`[VisionAI] ✅ Successfully Parsed Title: "${parsed.title}" | Tags: [${parsed.tags.join(', ')}]`);
+      return parsed;
+    } catch (error: any) {
+      console.error('[VisionAI] ❌ Exception in analyzeImage:', error);
+      RemoteLogger.error('Vision AI failed to read or upload image', {
+        error: error?.message || String(error),
+        stack: error?.stack,
+        imageUri,
+      }, 'VisionAI');
+      throw error;
     }
   }
 
   private static parseResponse(rawText: string): VisionAnalysisResult {
     try {
       let cleaned = rawText.trim();
-      if (cleaned.startsWith('```')) {
+      
+      // Match outermost JSON object { ... }
+      const match = cleaned.match(/\{[\s\S]*\}/);
+      if (match) {
+        cleaned = match[0];
+      } else if (cleaned.startsWith('```')) {
         cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
       }
 
@@ -78,13 +113,37 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
       return {
         title: json.title || 'Saved Image',
         tldr: json.tldr || '',
-        tags: Array.isArray(json.tags) ? json.tags.slice(0, 6) : ['Image'],
+        tags: Array.isArray(json.tags) && json.tags.length > 0 ? json.tags.slice(0, 6) : ['Image'],
         classification: this.validateClassification(json.classification),
         ocrText: json.ocrText || '',
         confidenceScore: 0.95,
       };
     } catch (e) {
-      console.warn('VisionAI: Failed to parse response:', rawText);
+      console.warn('[VisionAI] JSON parse exception, extracting regex fields from partial text:', rawText);
+      
+      // Regex extraction fallback for truncated responses
+      const titleMatch = rawText.match(/"title"\s*:\s*"([^"\n\\]*)/);
+      const tldrMatch = rawText.match(/"tldr"\s*:\s*"([^"\n\\]*)/);
+      const tagsMatch = rawText.match(/"tags"\s*:\s*\[([\s\S]*?)\]/);
+      let extractedTags: string[] = [];
+      if (tagsMatch) {
+        extractedTags = tagsMatch[1]
+          .split(',')
+          .map((t) => t.replace(/["'\s]/g, ''))
+          .filter(Boolean);
+      }
+
+      if (titleMatch && titleMatch[1].trim().length > 0) {
+        return {
+          title: titleMatch[1].trim(),
+          tldr: tldrMatch ? tldrMatch[1].trim() : '',
+          tags: extractedTags.length > 0 ? extractedTags : ['Image', 'Visual'],
+          classification: 'image',
+          ocrText: '',
+          confidenceScore: 0.9,
+        };
+      }
+
       return this.getFallbackResult();
     }
   }

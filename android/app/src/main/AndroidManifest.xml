@@ -28,15 +28,12 @@
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="mindmesh"/>
       </intent-filter>
-      <!-- Universal Inbound Share Intent Filter for Text, Links, Tweets, Posts, Photos & Gallery -->
-      <intent-filter>
+      <intent-filter data-generated="true">
         <action android:name="android.intent.action.SEND"/>
         <action android:name="android.intent.action.SEND_MULTIPLE"/>
-        <category android:name="android.intent.category.DEFAULT"/>
         <data android:mimeType="text/plain"/>
-        <data android:mimeType="text/*"/>
         <data android:mimeType="image/*"/>
-        <data android:mimeType="*/*"/>
+        <category android:name="android.intent.category.DEFAULT"/>
       </intent-filter>
     </activity>
   </application>
