@@ -1,97 +1,147 @@
-import { API_CONFIG } from '../config/api';
 import { MemoryItem, SerendipityConnection } from '../types/mindmesh';
+import { EmbeddingsService } from './embeddings';
+import { KnowledgeGraphEngine, ScoredPair } from './knowledgeGraph';
+import { SlopGate } from './slopGate';
+
+export interface DiscoveryResult {
+  connection: SerendipityConnection | null;
+  isFallback: boolean;
+  graphPair?: ScoredPair;
+}
 
 /**
- * Serendipity Engine — 2-Stage Dynamic Connection Discovery
+ * Serendipity Engine — Deterministic Knowledge Graph + LLM Synthesis Pipeline
  * 
- * Stage 1 (Fast): Discover pattern + generate title & 2-paragraph guidance (~150 output tokens)
- * Stage 2 (On demand): Generate next steps + evidence + explainability (~300 output tokens)
+ * Step 1 (Deterministic): Multi-Signal Knowledge Graph ranks candidate pairs
+ * using 40% Entity/Tag overlap, 35% BM25 text overlap, 15% Cross-modal bonus, and 10% Directory context.
+ * 
+ * Step 2 (Synthesis):
+ * - If BYOK key present: Gemini synthesizes punchy bridge title, strategic opportunity, and executable steps.
+ * - If offline / no key: Instant deterministic fallback synthesis with grounded graph evidence.
  */
 export class SerendipityEngine {
+  private static readonly SYNTHESIS_PROMPT = `You are the Serendipity Synthesis Engine inside MindMesh, a smart note-taking and idea synthesis app.
+A deterministic knowledge graph has already discovered a high-confidence connection between these two specific thoughts saved by the user:
 
-  // ─── STAGE 1: Fast Discovery (title + guidance only) ───────────────────────
+SOURCE ITEM:
+Type: {SOURCE_TYPE}
+Title: "{SOURCE_TITLE}"
+Content: {SOURCE_CONTENT}
+Tags: [{SOURCE_TAGS}]
 
-  private static readonly STAGE1_PROMPT = `You are the Serendipity Engine inside MindMesh, a smart note-taking app. The user saves screenshots, notes, voice memos, bookmarks, and posts from various sources. Your job: find ONE meaningful hidden connection between 2 or more of their saved items.
+TARGET ITEM:
+Type: {TARGET_TYPE}
+Title: "{TARGET_TITLE}"
+Content: {TARGET_CONTENT}
+Tags: [{TARGET_TAGS}]
 
-The connection should be relevant to WHAT THE USER CARES ABOUT based on their content. If they save tech/dev stuff, connect tech ideas. If they save recipes, connect food ideas. If they save business stuff, connect business opportunities. Match the user's world.
+DETERMINISTIC GRAPH EVIDENCE:
+- Shared Tags: [{SHARED_TAGS}]
+- Matched Keywords: [{MATCHED_KEYWORDS}]
+- Shared Space: {CONTEXT_SPACE}
+- Modality Bridge: {SOURCE_TYPE} + {TARGET_TYPE}
 
-MEMORIES:
-{MEMORIES}
+Your job: Synthesize the bridge between these two specific items. Match the user's world (tech, design, business, creative). Reference the actual content of both items. Do NOT guess different memories.
 
 Return ONLY valid JSON (no markdown, no backticks):
 {
-  "sourceIndex": 0,
-  "targetIndex": 1,
-  "confidenceScore": 0.92,
-  "title": "Short connection title (max 8 words)",
-  "contextSpace": "Relevant context label for this connection",
-  "suggestedBuildIdea": "One sentence — what insight or action emerges from this connection",
-  "paragraph1": "2-3 sentences explaining WHAT this pattern means for the user. Reference the actual content of both items. Tell them what you noticed.",
-  "paragraph2": "2-3 sentences explaining WHY this matters and what opportunity it opens up. Be specific to their context.",
-  "sourcedFrom": "A brief sentence like 'Discovered from your [type] about [topic] and your [type] about [topic]' — tell the user which items created this connection"
+  "title": "Short punchy connection title (max 8 words)",
+  "contextSpace": "Relevant context label",
+  "suggestedBuildIdea": "One sentence — what product feature, workflow, or insight emerges by combining them",
+  "paragraph1": "2-3 sentences explaining WHAT pattern connects them. Reference actual details from both items.",
+  "paragraph2": "2-3 sentences explaining WHY this matters and what specific execution opportunity it opens up.",
+  "nextActions": [
+    "Concrete actionable step 1",
+    "Concrete actionable step 2",
+    "Concrete actionable step 3"
+  ],
+  "explainabilityWhy": [
+    "Specific factual reason 1 linking them",
+    "Specific factual reason 2 linking them"
+  ],
+  "sourcedFrom": "Discovered from your {SOURCE_TYPE} on [Topic] and your {TARGET_TYPE} on [Topic]"
 }
 
 RULES:
-- Be context-aware: match the user's domain (tech, design, business, personal, creative, etc.)
-- Always reference the actual content of the memories, not generic advice
-- The "sourcedFrom" field must clearly tell the user WHICH items generated this connection
-- No AI slop (never use: leverage, delve, game-changer, seamlessly, synergy, paradigm shift, tapestry)
-- Write naturally like a smart friend pointing out something they missed`;
-
-  // ─── STAGE 2: Deep Dive (next steps + evidence + explainability) ────────────
-
-  private static readonly STAGE2_PROMPT = `You previously found a connection between these 2 saved items from the user:
-
-SOURCE: "{SOURCE_TITLE}" — {SOURCE_CONTENT}
-TARGET: "{TARGET_TITLE}" — {TARGET_CONTENT}
-CONNECTION: "{CONNECTION_TITLE}"
-GUIDANCE: {PARAGRAPH1} {PARAGRAPH2}
-
-Now generate actionable next steps tailored to the user's context. If the connection is about building something → give dev/build steps. If it's about learning → give learning steps. If it's about a personal goal → give personal action steps. Match their world.
-
-Return ONLY valid JSON:
-{
-  "nextActions": ["Concrete step 1 the user can do TODAY", "Concrete step 2 that follows logically", "Concrete step 3 that completes the loop"],
-  "explainabilityWhy": ["Specific factual reason 1 these items connect (reference actual content)", "Specific reason 2", "Specific reason 3"],
-  "quoteSnippet": "Short quote linking both items together (max 15 words)"
-}
-
-RULES:
-- nextActions must be immediately executable (not vague like "explore" or "research more")
-- explainabilityWhy must reference actual content from the source and target memories
-- No AI slop words. Write like a human.`;
+- Be specific to the actual items, no generic advice.
+- No AI slop words (never use: leverage, delve, game-changer, seamlessly, synergy, paradigm shift, tapestry, revolutionize).
+- Write naturally like a smart founder pointing out an execution opportunity.`;
 
   /**
-   * Stage 1: Fast discovery — returns connection with title + guidance only
+   * Discovers the next top deterministic connection between user memories
    */
-  static async discoverConnection(memories: MemoryItem[]): Promise<SerendipityConnection | null> {
-    if (memories.length < 2) return null;
+  static async discoverConnection(
+    memories: MemoryItem[],
+    existingPairKeys: Set<string> = new Set()
+  ): Promise<DiscoveryResult> {
+    if (memories.length < 2) {
+      return { connection: null, isFallback: false };
+    }
 
-    // Random sample 6 memories from the full collection
-    const sampled = this.randomSample(memories, 6);
+    // Step 1: Deterministic Multi-Signal Knowledge Graph Candidate Selection
+    const topPair = KnowledgeGraphEngine.findTopNovelPair(memories, existingPairKeys);
+    if (!topPair) {
+      return { connection: null, isFallback: false };
+    }
 
-    const memoriesText = sampled.map((m, idx) =>
-      `[${idx}] ${m.type} | "${m.title}" | "${m.content?.slice(0, 120) || ''}" | Tags: [${m.tags.join(', ')}]`
-    ).join('\n');
+    // Step 2: Check BYOK Key configuration
+    let hasCustomKey = false;
+    try {
+      const { ByokService } = await import('./byokService');
+      hasCustomKey = await ByokService.hasCustomKey();
+    } catch (_) {}
 
-    const prompt = this.STAGE1_PROMPT.replace('{MEMORIES}', memoriesText);
+    // If no custom BYOK key, execute deterministic fallback synthesis immediately
+    if (!hasCustomKey) {
+      const fallbackConn = KnowledgeGraphEngine.generateDeterministicFallbackSynthesis(topPair);
+      return {
+        connection: fallbackConn,
+        isFallback: true,
+        graphPair: topPair,
+      };
+    }
+
+    // Step 3: LLM Synthesis with BYOK Key
+    const { source, target, evidence, confidenceScore } = topPair;
+
+    const prompt = this.SYNTHESIS_PROMPT
+      .replace(/{SOURCE_TYPE}/g, source.type)
+      .replace('{SOURCE_TITLE}', source.title || '')
+      .replace('{SOURCE_CONTENT}', (source.content || source.ocrText || '').slice(0, 200))
+      .replace('{SOURCE_TAGS}', (source.tags || []).join(', '))
+      .replace(/{TARGET_TYPE}/g, target.type)
+      .replace('{TARGET_TITLE}', target.title || '')
+      .replace('{TARGET_CONTENT}', (target.content || target.ocrText || '').slice(0, 200))
+      .replace('{TARGET_TAGS}', (target.tags || []).join(', '))
+      .replace('{SHARED_TAGS}', evidence.sharedTags.join(', ') || 'None')
+      .replace('{MATCHED_KEYWORDS}', evidence.matchedKeywords.join(', ') || 'Semantic alignment')
+      .replace('{CONTEXT_SPACE}', evidence.contextMatch || source.contextSpace || 'Workspace');
 
     try {
-      const json = await this.callGemini(prompt, 250);
-      if (!json) return null;
+      const json = await this.callGemini(prompt, 350);
 
-      const sourceIdx = json.sourceIndex ?? 0;
-      const targetIdx = json.targetIndex ?? 1;
-      const source = sampled[sourceIdx] || sampled[0];
-      const target = sampled[targetIdx] || sampled[1];
+      if (!json) {
+        // Fallback gracefully to deterministic synthesis if LLM returns null
+        const fallbackConn = KnowledgeGraphEngine.generateDeterministicFallbackSynthesis(topPair);
+        return {
+          connection: fallbackConn,
+          isFallback: true,
+          graphPair: topPair,
+        };
+      }
 
-      return {
-        id: `conn-${Date.now()}`,
+      const rawConnection: SerendipityConnection = {
+        id: `conn-${Date.now()}-${source.id.slice(-4)}-${target.id.slice(-4)}`,
         sourceMemoryId: source.id,
         targetMemoryId: target.id,
-        confidenceScore: json.confidenceScore || 0.91,
-        title: json.title || 'Pattern Discovered',
-        explainabilityWhy: [], // Filled in Stage 2
+        confidenceScore,
+        title: json.title || `${source.title} × ${target.title}`,
+        explainabilityWhy: Array.isArray(json.explainabilityWhy) && json.explainabilityWhy.length > 0
+          ? json.explainabilityWhy
+          : [
+              `Direct contextual alignment in ${json.contextSpace || source.contextSpace}.`,
+              `Shared concepts: ${evidence.sharedTags.join(', ') || evidence.matchedKeywords.join(', ')}.`,
+            ],
         evidenceProof: {
           sourceTitle: source.title,
           sourceDate: source.createdAt,
@@ -99,104 +149,94 @@ RULES:
           targetDate: target.createdAt,
           quoteSnippet: json.sourcedFrom || `Discovered from "${source.title}" and "${target.title}"`,
         },
-        contextSpace: json.contextSpace || source.contextSpace || 'General',
-        suggestedBuildIdea: json.suggestedBuildIdea || '',
+        contextSpace: json.contextSpace || evidence.contextMatch || source.contextSpace || 'General',
+        suggestedBuildIdea: json.suggestedBuildIdea || `Connect ${source.title} with ${target.title}`,
         actionableGuidance: {
           paragraph1: json.paragraph1 || '',
           paragraph2: json.paragraph2 || '',
         },
-        nextActions: [], // Filled in Stage 2
+        nextActions: Array.isArray(json.nextActions) && json.nextActions.length > 0
+          ? json.nextActions
+          : [
+              `1. Review "${source.title}" and "${target.title}".`,
+              `2. Define the unified user experience.`,
+              `3. Ship working feature prototype.`,
+            ],
         completedNextActions: [],
         slopGateScore: 100,
         slopGateStatus: 'PASSED',
         slopWordsRemoved: 0,
         hallmarkVerified: true,
+        npuInferenceMs: EmbeddingsService.measurePairInferenceMs(
+          `${source.title} ${source.content || ''}`,
+          `${target.title} ${target.content || ''}`
+        ),
+      };
+
+      const { connection } = SlopGate.verifyConnection(rawConnection);
+      return {
+        connection,
+        isFallback: false,
+        graphPair: topPair,
       };
     } catch (error) {
-      console.warn('SerendipityEngine Stage 1 failed:', error);
-      return null;
+      console.warn('[SerendipityEngine] LLM Synthesis error, using deterministic fallback:', error);
+      const fallbackConn = KnowledgeGraphEngine.generateDeterministicFallbackSynthesis(topPair);
+      return {
+        connection: fallbackConn,
+        isFallback: true,
+        graphPair: topPair,
+      };
     }
   }
 
   /**
-   * Stage 2: Deep dive — fills in next steps, explainability, and evidence
+   * Stage 2: Deep dive — fills in next steps and explainability if needed
    */
   static async deepDiveConnection(
     connection: SerendipityConnection,
     memories: MemoryItem[]
   ): Promise<SerendipityConnection | null> {
-    const source = memories.find(m => m.id === connection.sourceMemoryId);
-    const target = memories.find(m => m.id === connection.targetMemoryId);
-    if (!source || !target) return null;
-
-    const prompt = this.STAGE2_PROMPT
-      .replace('{SOURCE_TITLE}', source.title)
-      .replace('{SOURCE_CONTENT}', source.content?.slice(0, 150) || '')
-      .replace('{TARGET_TITLE}', target.title)
-      .replace('{TARGET_CONTENT}', target.content?.slice(0, 150) || '')
-      .replace('{CONNECTION_TITLE}', connection.title)
-      .replace('{PARAGRAPH1}', connection.actionableGuidance?.paragraph1 || '')
-      .replace('{PARAGRAPH2}', connection.actionableGuidance?.paragraph2 || '');
-
-    try {
-      const json = await this.callGemini(prompt, 300);
-      if (!json) return null;
-
-      return {
-        ...connection,
-        nextActions: json.nextActions || ['Validate the idea', 'Build a prototype', 'Ship an MVP'],
-        explainabilityWhy: json.explainabilityWhy || ['Related topics'],
-        evidenceProof: {
-          ...connection.evidenceProof,
-          quoteSnippet: json.quoteSnippet || `Connects "${source.title}" with "${target.title}"`,
-        },
-      };
-    } catch (error) {
-      console.warn('SerendipityEngine Stage 2 failed:', error);
-      return null;
+    if (connection.nextActions && connection.nextActions.length >= 3) {
+      return connection;
     }
-  }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+    const source = memories.find((m) => m.id === connection.sourceMemoryId);
+    const target = memories.find((m) => m.id === connection.targetMemoryId);
+    if (!source || !target) return connection;
+
+    const pair = KnowledgeGraphEngine.evaluatePair(source, target);
+    const fallback = KnowledgeGraphEngine.generateDeterministicFallbackSynthesis(pair);
+
+    return {
+      ...connection,
+      nextActions: fallback.nextActions,
+      explainabilityWhy: fallback.explainabilityWhy,
+    };
+  }
 
   private static async callGemini(prompt: string, maxTokens: number): Promise<any | null> {
-    const url = `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.GENERATE_ENDPOINT}`;
+    try {
+      const { ByokService } = await import('./byokService');
+      const hasCustom = await ByokService.hasCustomKey();
+      if (!hasCustom) return null;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-app-key': API_CONFIG.APP_SECRET,
-      },
-      body: JSON.stringify({ prompt }),
-    });
+      const text = await ByokService.executeGemini([{ parts: [{ text: prompt }] }], {
+        maxOutputTokens: maxTokens,
+        responseMimeType: 'application/json',
+      });
 
-    if (!response.ok) {
-      console.warn('SerendipityEngine: Proxy error', response.status);
+      if (!text) return null;
+
+      let cleaned = text.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      }
+
+      return JSON.parse(cleaned);
+    } catch (e) {
+      console.warn('[SerendipityEngine] callGemini error:', e);
       return null;
     }
-
-    const data = await response.json();
-    if (!data.success || !data.text) return null;
-
-    let cleaned = data.text.trim();
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-    }
-
-    return JSON.parse(cleaned);
-  }
-
-  /**
-   * Random sample N items from array (Fisher-Yates shuffle variant)
-   */
-  private static randomSample(arr: MemoryItem[], n: number): MemoryItem[] {
-    if (arr.length <= n) return [...arr];
-    const shuffled = [...arr];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-    }
-    return shuffled.slice(0, n);
   }
 }

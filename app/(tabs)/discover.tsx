@@ -15,6 +15,10 @@ import {
   Sparkles,
   Compass,
   ChevronRight,
+  Circle,
+  CheckCircle2,
+  Key,
+  X,
 } from '../../src/components/Icons';
 
 const SEED_IDS = new Set([
@@ -40,9 +44,15 @@ export default function DiscoverScreen() {
     isGeneratingConnections,
     isSynapticFusing,
     generateConnections,
+    toggleNextAction,
+    isByokNudgeDismissed,
+    dismissByokNudge,
+    openByokPrompt,
+    byokConfig,
   } = useMemoryStore();
 
   const userMemoriesCount = memories.filter((m) => !SEED_IDS.has(m.id)).length;
+  const isByokConfigured = !!(byokConfig.apiKey && byokConfig.apiKey.trim().length > 10);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -54,10 +64,10 @@ export default function DiscoverScreen() {
           <Text style={styles.headerTitle}>Discovery</Text>
         </View>
         <Text style={styles.headerSub}>
-          Cross-pollinate saved thoughts, discover patterns, and synthesize build plans.
+          Cross-pollinate saved thoughts, discover deterministic patterns, and synthesize build plans.
         </Text>
 
-        {/* Action Button: Trigger Pattern Discovery */}
+        {/* Action Button: Trigger Deterministic Pattern Discovery */}
         <TouchableOpacity
           style={[
             styles.triggerCta,
@@ -77,15 +87,15 @@ export default function DiscoverScreen() {
           <View style={styles.ctaTextCol}>
             <Text style={styles.ctaTitle}>
               {isGeneratingConnections
-                ? 'Discovering Patterns...'
+                ? 'Synthesizing Graph Connections...'
                 : userMemoriesCount < 2
                   ? 'Save 2+ memories to discover'
                   : 'Discover New Connections'}
             </Text>
             <Text style={styles.ctaSub}>
               {isGeneratingConnections
-                ? 'Analyzing vector relationships across your thoughts...'
-                : 'Synthesize hidden links between your captured memories'}
+                ? 'Evaluating entities, BM25 tokens, & cross-modal synergy...'
+                : 'Deterministic multi-signal knowledge graph across your vault'}
             </Text>
           </View>
           <ChevronRight size={16} color="#64748B" />
@@ -97,6 +107,36 @@ export default function DiscoverScreen() {
         contentContainerStyle={styles.scrollContainer}
         showsVerticalScrollIndicator={false}
       >
+        {/* On-Device Graph & BYOK Benefit Nudge Banner */}
+        {!isByokConfigured && !isByokNudgeDismissed && (
+          <View style={styles.byokBanner}>
+            <View style={styles.byokBannerHeader}>
+              <View style={styles.byokBadgeRow}>
+                <Sparkles size={14} color="#38BDF8" />
+                <Text style={styles.byokBadgeText}>Deterministic Knowledge Graph</Text>
+              </View>
+              <TouchableOpacity
+                onPress={dismissByokNudge}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <X size={14} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.byokBannerTitle}>Supercharge with Gemini AI</Text>
+            <Text style={styles.byokBannerSub}>
+              Connections are selected 100% on-device. Add your free Gemini API key to unlock personalized bridge insights and custom execution steps.
+            </Text>
+            <TouchableOpacity
+              style={styles.byokBannerButton}
+              onPress={openByokPrompt}
+              activeOpacity={0.85}
+            >
+              <Key size={14} color="#0F172A" />
+              <Text style={styles.byokBannerBtnText}>Connect Free Gemini Key</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {connections.length > 0 && (
           <Text style={styles.sectionHeader}>DISCOVERED PATTERNS ({connections.length})</Text>
         )}
@@ -108,7 +148,7 @@ export default function DiscoverScreen() {
             <Text style={styles.emptyStateSub}>
               {userMemoriesCount < 2
                 ? 'Save 2 or more thoughts, screenshots, or links — then tap Discover.'
-                : 'Tap "Discover New Connections" above to run similarity analysis across your vault.'}
+                : 'Tap "Discover New Connections" above to run knowledge graph matching across your vault.'}
             </Text>
           </View>
         ) : (
@@ -172,6 +212,46 @@ export default function DiscoverScreen() {
                         </View>
                       )}
                     </View>
+                  </View>
+                )}
+
+                {/* Graph Evidence Why */}
+                {conn.explainabilityWhy && conn.explainabilityWhy.length > 0 && (
+                  <View style={styles.evidenceSection}>
+                    <Text style={styles.evidenceHeader}>GRAPH EVIDENCE</Text>
+                    {conn.explainabilityWhy.map((reason, idx) => (
+                      <View key={idx} style={styles.evidenceRow}>
+                        <View style={styles.evidenceDot} />
+                        <Text style={styles.evidenceText}>{reason}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Actionable Next Steps Checklist */}
+                {conn.nextActions && conn.nextActions.length > 0 && (
+                  <View style={styles.actionsSection}>
+                    <Text style={styles.actionsSectionTitle}>ACTIONABLE NEXT STEPS</Text>
+                    {conn.nextActions.map((action, idx) => {
+                      const isCompleted = (conn.completedNextActions || []).includes(action);
+                      return (
+                        <TouchableOpacity
+                          key={idx}
+                          style={styles.actionCheckRow}
+                          onPress={() => toggleNextAction(conn.id, action)}
+                          activeOpacity={0.7}
+                        >
+                          {isCompleted ? (
+                            <CheckCircle2 size={16} color="#34D399" />
+                          ) : (
+                            <Circle size={16} color="#64748B" />
+                          )}
+                          <Text style={[styles.actionText, isCompleted && styles.actionTextCompleted]}>
+                            {action}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
                   </View>
                 )}
               </View>
@@ -245,6 +325,59 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
     marginTop: 2,
+  },
+  byokBanner: {
+    backgroundColor: '#161922',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(56, 189, 248, 0.2)',
+  },
+  byokBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  byokBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  byokBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#38BDF8',
+    letterSpacing: 0.2,
+  },
+  byokBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F8FAFC',
+    marginBottom: 4,
+  },
+  byokBannerSub: {
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 17,
+    marginBottom: 10,
+  },
+  byokBannerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#38BDF8',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignSelf: 'flex-start',
+  },
+  byokBannerBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#0F172A',
   },
   scrollContent: {
     flex: 1,
@@ -375,9 +508,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  evidenceSection: {
+    marginTop: 4,
+    marginBottom: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.015)',
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.03)',
+  },
+  evidenceHeader: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#64748B',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  evidenceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: 4,
+  },
+  evidenceDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#38BDF8',
+    marginTop: 6,
+  },
+  evidenceText: {
+    fontSize: 11,
+    color: '#94A3B8',
+    lineHeight: 16,
+    flex: 1,
+  },
   actionsSection: {
     marginTop: 6,
-    marginBottom: 10,
+    marginBottom: 6,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.04)',
     paddingTop: 8,
@@ -403,37 +571,5 @@ const styles = StyleSheet.create({
   actionTextCompleted: {
     textDecorationLine: 'line-through',
     color: '#64748B',
-  },
-  deepDiveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
-    marginVertical: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
-    borderRadius: 8,
-  },
-  deepDiveText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#94A3B8',
-  },
-  buildPlanCta: {
-    backgroundColor: '#252832',
-    borderRadius: 10,
-    paddingVertical: 11,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  buildPlanCtaText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
 });

@@ -25,6 +25,9 @@ interface MemoryStoreState {
   isBuildPlanModalVisible: boolean;
   isSynapticFusing: boolean;
   isGeneratingConnections: boolean;
+  isLastDiscoveryFallback: boolean;
+  isByokNudgeDismissed: boolean;
+  dismissByokNudge: () => void;
   userStats: UserStats;
 
   // Actions
@@ -175,6 +178,12 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
       if (sqliteBuildPlan) {
         set({ activeBuildPlan: sqliteBuildPlan });
       }
+
+      // Load stored connections
+      const sqliteConnections = await SQLiteDatabaseService.getAllConnections();
+      if (sqliteConnections.length > 0) {
+        set({ connections: sqliteConnections });
+      }
     } catch (error) {
       console.error('[MemoryStore] Failed to load stored memories from SQLite:', error);
     }
@@ -193,6 +202,9 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   isBuildPlanModalVisible: false,
   isSynapticFusing: false,
   isGeneratingConnections: false,
+  isLastDiscoveryFallback: false,
+  isByokNudgeDismissed: false,
+  dismissByokNudge: () => set({ isByokNudgeDismissed: true }),
   userStats: {
     capturesCount: 17,
     discoveriesCount: 4,
@@ -398,17 +410,40 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
     set({ isGeneratingConnections: true, isSynapticFusing: true });
 
     try {
-      // Stage 1: Fast discovery — title + guidance strictly on user's own memories
-      const connection = await SerendipityEngine.discoverConnection(userMemories);
+      // Build set of already discovered pair keys for deduplication
+      const existingPairKeys = new Set<string>();
+      state.connections.forEach((c) => {
+        if (c.sourceMemoryId && c.targetMemoryId) {
+          existingPairKeys.add([c.sourceMemoryId, c.targetMemoryId].sort().join('::'));
+        }
+      });
+
+      const { connection, isFallback } = await SerendipityEngine.discoverConnection(
+        userMemories,
+        existingPairKeys
+      );
+
       if (connection) {
+        await SQLiteDatabaseService.saveConnection(connection);
         set((s) => ({
           connections: [connection, ...s.connections],
           isGeneratingConnections: false,
           isSynapticFusing: false,
+          isLastDiscoveryFallback: isFallback,
+          isByokNudgeDismissed: false,
           userStats: { ...s.userStats, discoveriesCount: s.userStats.discoveriesCount + 1 },
         }));
+
+        if (isFallback) {
+          useMemoryStore.getState().showToast('Discovered connection via On-Device Knowledge Graph!', 'success', 3000);
+        }
       } else {
         set({ isGeneratingConnections: false, isSynapticFusing: false });
+        useMemoryStore.getState().showToast(
+          'All high-affinity thought connections discovered! Save new thoughts to unlock more.',
+          'success',
+          4000
+        );
       }
     } catch (error) {
       console.warn('generateConnections failed:', error);

@@ -39,6 +39,8 @@ export const SQLiteDatabaseService = {
       await db.execAsync(`
         CREATE TABLE IF NOT EXISTS connections (
           id TEXT PRIMARY KEY NOT NULL,
+          sourceMemoryId TEXT,
+          targetMemoryId TEXT,
           title TEXT NOT NULL,
           confidenceScore REAL NOT NULL,
           contextSpace TEXT NOT NULL,
@@ -51,6 +53,14 @@ export const SQLiteDatabaseService = {
           isDeepDiveExpanded INTEGER DEFAULT 0
         );
       `);
+
+      // Ensure migration columns exist for existing tables
+      try {
+        await db.execAsync('ALTER TABLE connections ADD COLUMN sourceMemoryId TEXT;');
+      } catch (_) {}
+      try {
+        await db.execAsync('ALTER TABLE connections ADD COLUMN targetMemoryId TEXT;');
+      } catch (_) {}
 
       // Create Build Plans Table
       await db.execAsync(`
@@ -217,6 +227,76 @@ export const SQLiteDatabaseService = {
     } catch (error) {
       console.error('[SQLiteDatabaseService] Error getting build plan:', error);
       return null;
+    }
+  },
+
+  async saveConnection(connection: SerendipityConnection): Promise<void> {
+    try {
+      const db = await this.getDb();
+      await db.runAsync(
+        `INSERT OR REPLACE INTO connections (
+          id, sourceMemoryId, targetMemoryId, title, confidenceScore, contextSpace,
+          suggestedBuildIdea, explainabilityWhy, evidenceProof, actionableGuidance,
+          nextActions, completedNextActions, isDeepDiveExpanded
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          connection.id,
+          connection.sourceMemoryId,
+          connection.targetMemoryId,
+          connection.title,
+          connection.confidenceScore,
+          connection.contextSpace,
+          connection.suggestedBuildIdea,
+          JSON.stringify(connection.explainabilityWhy || []),
+          JSON.stringify(connection.evidenceProof || {}),
+          JSON.stringify(connection.actionableGuidance || {}),
+          JSON.stringify(connection.nextActions || []),
+          JSON.stringify(connection.completedNextActions || []),
+          connection.isDeepDiveExpanded ? 1 : 0,
+        ]
+      );
+    } catch (error) {
+      console.error('[SQLiteDatabaseService] Error saving connection:', error);
+    }
+  },
+
+  async getAllConnections(): Promise<SerendipityConnection[]> {
+    try {
+      const db = await this.getDb();
+      const rows = await db.getAllAsync<any>('SELECT * FROM connections ORDER BY id DESC');
+      return rows.map((row) => ({
+        id: row.id,
+        sourceMemoryId: row.sourceMemoryId || '',
+        targetMemoryId: row.targetMemoryId || '',
+        title: row.title,
+        confidenceScore: row.confidenceScore,
+        contextSpace: row.contextSpace,
+        suggestedBuildIdea: row.suggestedBuildIdea,
+        explainabilityWhy: row.explainabilityWhy ? JSON.parse(row.explainabilityWhy) : [],
+        evidenceProof: row.evidenceProof ? JSON.parse(row.evidenceProof) : {
+          sourceTitle: '',
+          sourceDate: '',
+          targetTitle: '',
+          targetDate: '',
+          quoteSnippet: '',
+        },
+        actionableGuidance: row.actionableGuidance ? JSON.parse(row.actionableGuidance) : undefined,
+        nextActions: row.nextActions ? JSON.parse(row.nextActions) : [],
+        completedNextActions: row.completedNextActions ? JSON.parse(row.completedNextActions) : [],
+        isDeepDiveExpanded: !!row.isDeepDiveExpanded,
+      }));
+    } catch (error) {
+      console.error('[SQLiteDatabaseService] Error getting all connections:', error);
+      return [];
+    }
+  },
+
+  async deleteConnection(id: string): Promise<void> {
+    try {
+      const db = await this.getDb();
+      await db.runAsync('DELETE FROM connections WHERE id = ?', [id]);
+    } catch (error) {
+      console.error('[SQLiteDatabaseService] Error deleting connection:', error);
     }
   },
 };
