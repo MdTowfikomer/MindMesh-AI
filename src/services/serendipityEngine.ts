@@ -118,7 +118,7 @@ RULES:
       .replace('{CONTEXT_SPACE}', evidence.contextMatch || source.contextSpace || 'Workspace');
 
     try {
-      const json = await this.callGemini(prompt, 350);
+      const json = await this.callGemini(prompt, 1024);
 
       if (!json) {
         // Fallback gracefully to deterministic synthesis if LLM returns null
@@ -215,6 +215,48 @@ RULES:
     };
   }
 
+  private static safeParseJson(raw: string): any | null {
+    if (!raw) return null;
+    let cleaned = raw.trim();
+
+    // Strip Markdown code blocks if present
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '');
+    }
+
+    // Extract the outermost JSON object { ... }
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleaned = cleaned.substring(firstBrace, lastBrace + 1);
+    }
+
+    // Remove trailing commas before closing braces/brackets
+    cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+
+    try {
+      return JSON.parse(cleaned);
+    } catch {
+      // Attempt repair for common edge cases (unclosed quotes, braces)
+      try {
+        let repaired = cleaned;
+        const quoteCount = (repaired.match(/(?<!\\)"/g) || []).length;
+        if (quoteCount % 2 !== 0) {
+          repaired += '"';
+        }
+        const openBrackets = (repaired.match(/\[/g) || []).length - (repaired.match(/\]/g) || []).length;
+        for (let i = 0; i < openBrackets; i++) repaired += ']';
+        const openBraces = (repaired.match(/\{/g) || []).length - (repaired.match(/\}/g) || []).length;
+        for (let i = 0; i < openBraces; i++) repaired += '}';
+
+        repaired = repaired.replace(/,\s*([}\]])/g, '$1');
+        return JSON.parse(repaired);
+      } catch {
+        return null;
+      }
+    }
+  }
+
   private static async callGemini(prompt: string, maxTokens: number): Promise<any | null> {
     try {
       const { ByokService } = await import('./byokService');
@@ -228,14 +270,13 @@ RULES:
 
       if (!text) return null;
 
-      let cleaned = text.trim();
-      if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      const parsed = this.safeParseJson(text);
+      if (!parsed) {
+        console.log('[SerendipityEngine] Failed to parse JSON from Gemini response, using fallback');
       }
-
-      return JSON.parse(cleaned);
+      return parsed;
     } catch (e) {
-      console.warn('[SerendipityEngine] callGemini error:', e);
+      console.log('[SerendipityEngine] callGemini error, using fallback:', e);
       return null;
     }
   }
