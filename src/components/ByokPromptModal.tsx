@@ -62,7 +62,7 @@ export const ByokPromptModal: React.FC = () => {
 
           {/* Icon Badge */}
           <View style={styles.iconCircle}>
-            <Key size={24} color="#38BDF8" />
+            <Key size={22} color="#F8FAFC" />
           </View>
 
           {/* Header Title & Subtitle */}
@@ -75,11 +75,11 @@ export const ByokPromptModal: React.FC = () => {
           {/* Benefit Bullets */}
           <View style={styles.benefitList}>
             <View style={styles.benefitRow}>
-              <Sparkles size={14} color="#38BDF8" />
+              <Sparkles size={14} color="#94A3B8" />
               <Text style={styles.benefitText}>Custom AI tags & precise summarization</Text>
             </View>
             <View style={styles.benefitRow}>
-              <ShieldCheck size={14} color="#38BDF8" />
+              <ShieldCheck size={14} color="#94A3B8" />
               <Text style={styles.benefitText}>Support for Gemini 3.5 Flash, 3.6 & 3.7 models</Text>
             </View>
           </View>
@@ -91,7 +91,7 @@ export const ByokPromptModal: React.FC = () => {
             onPress={() => setDontShowAgain(!dontShowAgain)}
           >
             <View style={[styles.checkboxBox, dontShowAgain && styles.checkboxBoxChecked]}>
-              {dontShowAgain && <Check size={12} color="#FFF" />}
+              {dontShowAgain && <Check size={11} color="#0F1015" />}
             </View>
             <Text style={styles.checkboxLabel}>Don't show this again</Text>
           </TouchableOpacity>
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 22,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
@@ -156,15 +156,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   title: {
     fontSize: 18,
@@ -220,8 +220,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
   },
   checkboxBoxChecked: {
-    backgroundColor: '#38BDF8',
-    borderColor: '#38BDF8',
+    backgroundColor: '#F8FAFC',
+    borderColor: '#F8FAFC',
   },
   checkboxLabel: {
     fontSize: 12,
@@ -233,16 +233,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   primaryBtn: {
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#F8FAFC',
     borderRadius: 12,
     paddingVertical: 13,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    shadowColor: '#38BDF8',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 4,
   },
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     color: '#0F1015',
   },
   secondaryBtn: {
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',

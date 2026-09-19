@@ -94,6 +94,7 @@ export interface SerendipityConnection {
   slopGateStatus?: 'PASSED' | 'WARNING' | 'REJECTED';
   slopWordsRemoved?: number;
   hallmarkVerified?: boolean;
+  npuInferenceMs?: number;
 }
 
 export interface BuildPlan {

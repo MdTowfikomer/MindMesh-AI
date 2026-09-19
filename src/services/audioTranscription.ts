@@ -35,37 +35,58 @@ Write the transcription exactly as spoken. Don't clean up casual speech.`;
 
   static async transcribe(audioUri: string): Promise<TranscriptionResult> {
     try {
+      const { ByokService } = await import('./byokService');
+      const hasCustom = await ByokService.hasCustomKey();
+
+      if (!hasCustom) {
+        // Protect server key: instant local offline voice note for default users
+        console.log('[AudioTranscription] 📱 Default mode (no BYOK key): saving instant offline voice note');
+        return this.getFallback();
+      }
+
       const base64 = await readAsStringAsync(audioUri, {
         encoding: EncodingType.Base64,
       });
 
       const mimeType = this.getMimeType(audioUri);
-      const url = `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.AUDIO_ENDPOINT}`;
+      const config = await ByokService.loadConfig();
+      const customModel = config.model || 'gemini-3.5-flash';
 
-      const response = await fetch(url, {
+      const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/${customModel}:generateContent?key=${config.apiKey}`;
+      const response = await fetch(directUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-app-key': API_CONFIG.APP_SECRET,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          prompt: this.PROMPT,
-          audioBase64: base64,
-          mimeType,
+          contents: [
+            {
+              parts: [
+                { text: this.PROMPT },
+                {
+                  inlineData: {
+                    mimeType,
+                    data: base64,
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            responseMimeType: 'application/json',
+          },
         }),
       });
 
       if (!response.ok) {
-        console.warn('[AudioTranscription] Proxy error', response.status);
+        console.warn('[AudioTranscription] Direct BYOK error:', response.status);
         return this.getFallback();
       }
 
       const data = await response.json();
-      if (!data.success || !data.text) {
-        return this.getFallback();
-      }
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) return this.getFallback();
 
-      return this.parseResponse(data.text);
+      return this.parseResponse(text);
     } catch (error) {
       console.warn('[AudioTranscription] Failed:', error);
       return this.getFallback();

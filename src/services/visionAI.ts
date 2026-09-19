@@ -98,56 +98,25 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
               return this.parseResponse(text);
             }
           } else {
-            console.warn(`[VisionAI] BYOK direct call returned HTTP ${directRes.status}, falling back to proxy`);
-            RemoteLogger.warn(`BYOK direct call returned HTTP ${directRes.status}, falling back to developer default key`, { status: directRes.status }, 'VisionAI-BYOK');
+            console.warn(`[VisionAI] BYOK direct call returned HTTP ${directRes.status}, using local fallback`);
+            RemoteLogger.warn(`BYOK direct call returned HTTP ${directRes.status}, using local fallback`, { status: directRes.status }, 'VisionAI-BYOK');
           }
         } catch (byokErr: any) {
-          console.warn('[VisionAI] BYOK direct call error, falling back to proxy:', byokErr);
-          RemoteLogger.warn('BYOK direct call failed, falling back to developer default key', { error: byokErr?.message }, 'VisionAI-BYOK');
+          console.warn('[VisionAI] BYOK direct call error, using local fallback:', byokErr);
+          RemoteLogger.warn('BYOK direct call failed, using local fallback', { error: byokErr?.message }, 'VisionAI-BYOK');
         }
+        return this.getFallbackResult();
       }
 
-      // ─── Stage 2: Central Developer / System Default Proxy Fallback ───
-      const url = `${API_CONFIG.PROXY_BASE_URL}${API_CONFIG.VISION_ENDPOINT}`;
-
-      console.log(`[VisionAI] ⚡ Executing image analysis with Developer's Default System Key (Vercel Proxy) (Size: ${Math.round(base64.length / 1024)} KB)`);
-      RemoteLogger.info("⚡ Executing Vision AI request with Developer's Default System Key (Vercel Proxy)", {
-        endpoint: url,
+      // ─── Stage 2: Default Mode (No Custom Key) ───
+      // Protect server key: do not call server LLM for users without their own API key
+      console.log(`[VisionAI] 📱 Default mode (no custom BYOK key): applying instant local photo categorization`);
+      RemoteLogger.info("📱 Default mode (no custom BYOK key): applying instant local categorization", {
+        imageUri: resolvedUri,
         imageSizeKb: Math.round(base64.length / 1024),
-      }, 'VisionAI-DefaultProxy');
+      }, 'VisionAI-LocalFallback');
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-app-key': API_CONFIG.APP_SECRET || 'SHIPATHON',
-        },
-        body: JSON.stringify({
-          prompt: this.PROMPT,
-          imageBase64: base64,
-          mimeType,
-        }),
-      });
-
-      console.log(`[VisionAI] 📥 Response Status: ${response.status}`);
-
-      if (!response.ok) {
-        console.warn(`[VisionAI] ⚠️ Proxy returned HTTP ${response.status}`);
-        RemoteLogger.warn(`Vision AI proxy returned HTTP ${response.status}`, { imageUri: resolvedUri, status: response.status }, 'VisionAI');
-        return this.getFallbackResult();
-      }
-
-      const data = await response.json();
-      if (!data.success || !data.text) {
-        console.warn('[VisionAI] ⚠️ Proxy returned unsuccessful or empty response:', data);
-        RemoteLogger.warn('Vision AI proxy returned empty/unsuccessful response', { imageUri: resolvedUri, data }, 'VisionAI');
-        return this.getFallbackResult();
-      }
-
-      console.log(`[VisionAI] 📄 Raw AI Response (${data.modelUsed}):`, data.text.replace(/\n/g, ' '));
-      const parsed = this.parseResponse(data.text);
-      console.log(`[VisionAI] ✅ Successfully Parsed Title: "${parsed.title}" | Tags: [${parsed.tags.join(', ')}]`);
-      return parsed;
+      return this.getFallbackResult();
     } catch (error: any) {
       console.error('[VisionAI] ❌ Exception in analyzeImage:', error);
       RemoteLogger.error('Vision AI failed to read or upload image', {

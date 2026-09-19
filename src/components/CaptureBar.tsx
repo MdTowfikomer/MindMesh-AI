@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Platform, Pressable } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Platform, Pressable, Alert } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -56,57 +56,102 @@ export const CaptureBar: React.FC = () => {
     transform: [{ scale: pulse.value }],
   }));
 
-  const handlePickImage = async () => {
+  const processImageUri = async (uri: string) => {
+    try {
+      setIsSaving(true);
+
+      const analysis = await VisionAIService.analyzeImage(uri);
+      setIsSaving(false);
+
+      console.log('[CaptureBar] 💾 Adding memory to store:', {
+        title: analysis.title,
+        tags: analysis.tags,
+        classification: analysis.classification,
+      });
+
+      addMemory({
+        type: analysis.classification,
+        title: analysis.title,
+        content: analysis.tldr || analysis.ocrText,
+        imageUrl: uri,
+        ocrText: analysis.ocrText,
+        tags: analysis.tags,
+        contextSpace: analysis.tags[0] || 'Visual',
+        confidenceScore: analysis.confidenceScore,
+      });
+      triggerSynapticFusion();
+      CyberTheme.haptics.success();
+
+      const { ByokService } = await import('../services/byokService');
+      const hasKey = await ByokService.hasCustomKey();
+      if (!hasKey) {
+        useMemoryStore.getState().triggerByokPromptIfNeeded();
+      } else {
+        showToast('✨ Visual memory analyzed & saved with BYOK!', 'success');
+      }
+    } catch (e: any) {
+      setIsSaving(false);
+      console.error('[CaptureBar] Image processing error:', e);
+      RemoteLogger.error('Image cannot be processed from in-app picker', {
+        error: e?.message || String(e),
+        stack: e?.stack,
+      }, 'InAppImagePicker');
+      showToast('Image could not be analyzed', 'error');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    CyberTheme.haptics.light();
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        showToast('Camera permission required to capture whiteboards/notes', 'error');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        await processImageUri(result.assets[0].uri);
+      }
+    } catch (e: any) {
+      console.error('[CaptureBar] Camera error:', e);
+      showToast('Camera capture failed', 'error');
+    }
+  };
+
+  const handlePickGallery = async () => {
     CyberTheme.haptics.light();
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
       });
-
       if (!result.canceled && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        setIsSaving(true);
-
-        const analysis = await VisionAIService.analyzeImage(uri);
-        setIsSaving(false);
-
-        console.log('[CaptureBar] 💾 Adding memory to store:', {
-          title: analysis.title,
-          tags: analysis.tags,
-          classification: analysis.classification,
-        });
-
-        addMemory({
-          type: analysis.classification,
-          title: analysis.title,
-          content: analysis.tldr || analysis.ocrText,
-          imageUrl: uri,
-          ocrText: analysis.ocrText,
-          tags: analysis.tags,
-          contextSpace: analysis.tags[0] || 'Visual',
-          confidenceScore: analysis.confidenceScore,
-        });
-        triggerSynapticFusion();
-        CyberTheme.haptics.success();
-
-        const { ByokService } = await import('../services/byokService');
-        const hasKey = await ByokService.hasCustomKey();
-        if (!hasKey) {
-          useMemoryStore.getState().triggerByokPromptIfNeeded();
-        } else {
-          showToast('✨ Visual memory analyzed & saved with BYOK!', 'success');
-        }
+        await processImageUri(result.assets[0].uri);
       }
     } catch (e: any) {
-      setIsSaving(false);
-      console.error('[CaptureBar] Image picker error:', e);
-      RemoteLogger.error('Image cannot be able to uploaded from in-app picker', {
-        error: e?.message || String(e),
-        stack: e?.stack,
-      }, 'InAppImagePicker');
-      showToast('Image cannot be able to uploaded', 'error');
+      console.error('[CaptureBar] Gallery error:', e);
+      showToast('Image pick failed', 'error');
     }
+  };
+
+  const handlePickImage = async () => {
+    CyberTheme.haptics.light();
+    if (Platform.OS === 'web') {
+      await handlePickGallery();
+      return;
+    }
+    Alert.alert(
+      'Visual Capture',
+      'Choose capture source:',
+      [
+        { text: '📸 Camera (Whiteboard / Docs)', onPress: handleTakePhoto },
+        { text: '🖼️ Photos & Screenshots', onPress: handlePickGallery },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
   };
 
   const handlePickPdf = async () => {

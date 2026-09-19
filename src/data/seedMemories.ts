@@ -2,48 +2,73 @@ import { MemoryItem, SerendipityConnection, BuildPlan } from '../types/mindmesh'
 
 export const seedMemories: MemoryItem[] = [
   {
-    id: 'mem-article-1',
+    id: 'mem-shipathon-official',
     type: 'article',
-    title: 'Why Great Products Feel Effortless: The Hidden UX Mechanics',
-    content: 'An in-depth breakdown of how subtle animations, micro-feedback, and local-first latency zeroing create products users fall in love with instantly.',
-    tags: ['UX', 'ProductDesign', 'Article', 'MobileApp'],
-    invisibleTags: ['interaction design', 'microanimations', 'user psychology', 'retention', 'delight'],
+    title: 'RevenueCat Shipathon 2026: Compete for $1M in Prizes',
+    content: 'Join the world’s biggest mobile hackathon. Build and ship your app with in-app purchases, compete for $1M in prizes, and launch on the App Store.',
+    imageUrl: 'https://pbs.twimg.com/media/HO8Yt-gXwAAEUVJ.jpg?name=orig',
+    tags: ['Shipaton', 'RevenueCat', 'Hackathon', 'Mobile'],
+    invisibleTags: ['shipathon 2026', 'revenuecat hackathon', 'in-app purchases', 'mobile developer'],
     dominantColors: [
-      { name: 'blue', hex: '#3B82F6' },
-      { name: 'indigo', hex: '#6366F1' }
+      { name: 'dark', hex: '#0F1015' },
+      { name: 'amber', hex: '#F59E0B' }
     ],
     urlMetadata: {
-      url: 'https://medium.com/design/effortless-product-ux',
-      domain: 'medium.com',
-      author: 'Elena Rostova',
-      siteName: 'UX Collective',
-      readTime: '6 min read',
-      highlights: [
-        'Speed is an emotional feature. When an app responds in under 50ms, it feels like an extension of thought.',
-        'Great micro-animations serve a function: guiding the eye to where action occurred.'
-      ],
-      fullText: `Why Great Products Feel Effortless: The Hidden UX Mechanics
-
-Speed is an emotional feature. When an app responds in under 50ms, it feels like an extension of thought. Most digital tools suffer from latency lag—making users hesitate before taking action.
-
-The secret to modern minimalist interfaces lies in local-first optimistic updates coupled with subtle physics feedback. When a user taps 'Save', the item should visually persist immediately before the network handshake occurs.
-
-Key Principles:
-1. Zero Latency Optimistic State Updates
-2. Tactile Physics Feedback (Haptics + Spring Animations)
-3. Invisible Categorization — don't force users to organize upfront.`
+      url: 'https://x.com/RevenueCat/status/2084912626392543637',
+      domain: 'x.com',
+      author: 'RevenueCat (@RevenueCat)',
+      siteName: 'X (formerly Twitter)',
+      readTime: '1 min read',
     },
-    contextSpace: 'MobileUX',
+    contextSpace: 'Shipaton',
     createdAt: '2026-08-11T14:10:00Z',
     confidenceScore: 0.99,
-    aspectRatio: 1.15,
+    aspectRatio: 1.0,
   },
   {
-    id: 'mem-quote-1',
+    id: 'mem-paywall-inspo',
+    type: 'pricing',
+    title: 'RevenueCat Dashboard, Paywalls & Charts',
+    content: 'Learn how to configure RevenueCat in-app subscriptions, track MRR & churn cohorts, and deploy dynamic paywalls in real-time.',
+    imageUrl: 'https://i.ytimg.com/vi/hCmUEb4hwHA/hqdefault.jpg',
+    ocrText: 'REVENUECAT DASHBOARD AND CHARTS: Real-time MRR, Active Trials, and Paywall Optimization',
+    tags: ['Pricing', 'RevenueCat', 'Analytics', 'MobileUX'],
+    invisibleTags: ['subscription revenue', 'freemium conversion', 'in-app purchases', 'revenuecat dashboard'],
+    dominantColors: [
+      { name: 'red', hex: '#EF4444' },
+      { name: 'warm tone', hex: '#F97316' }
+    ],
+    urlMetadata: {
+      url: 'https://www.youtube.com/watch?v=hCmUEb4hwHA',
+      domain: 'youtube.com',
+      author: 'RevenueCat',
+      siteName: 'YouTube',
+    },
+    contextSpace: 'Pricing',
+    createdAt: '2026-08-10T14:30:00Z',
+    confidenceScore: 0.96,
+    aspectRatio: 1.33,
+  },
+  {
+    id: 'mem-voice-shipathon',
+    type: 'voice',
+    title: 'Voice Note: Shipathon Submission Vision',
+    content: 'What if we build an AI note-taking vault that doesn’t just archive ideas, but automatically detects monetization opportunities and drafts RevenueCat paywall blueprints?',
+    audioDuration: '0:38',
+    audioWaveform: [20, 45, 80, 60, 95, 30, 75, 90, 40, 60, 85, 100, 50, 30, 70, 85, 40],
+    tags: ['Ideas', 'VoiceMemo', 'RevenueCat', 'Shipaton'],
+    invisibleTags: ['vector similarity', 'on-device ai', 'autonomous synthesis'],
+    contextSpace: 'Ideas',
+    createdAt: '2026-08-10T10:15:00Z',
+    confidenceScore: 0.94,
+    aspectRatio: 0.9,
+  },
+  {
+    id: 'mem-quote-pg',
     type: 'quote',
-    title: 'Paul Graham on Hardware & Software Simplicity',
+    title: 'Paul Graham on Building Great Products',
     content: '“Simple things should be simple, complex things should be possible. The rarest quality in software is discipline.”',
-    tags: ['Quote', 'Philosophy', 'Startup', 'PaulGraham'],
+    tags: ['Ideas', 'Quote', 'Philosophy', 'Startup'],
     invisibleTags: ['ycombinator', 'simplicity', 'design principles', 'discipline'],
     urlMetadata: {
       url: 'https://paulgraham.com/simplicity.html',
@@ -51,159 +76,54 @@ Key Principles:
       author: 'Paul Graham',
       siteName: 'Paul Graham Essays'
     },
-    contextSpace: 'Idea',
-    createdAt: '2026-08-10T09:30:00Z',
+    contextSpace: 'Ideas',
+    createdAt: '2026-08-07T09:30:00Z',
     confidenceScore: 0.97,
     aspectRatio: 0.85,
-  },
-  {
-    id: 'mem-video-1',
-    type: 'video',
-    title: 'Product Demo: Skia 60FPS Physics Particles',
-    content: 'Interactive particle node physics rendering in React Native Skia. Connecting 50+ nodes in real-time with zero frame drops.',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-    mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    audioDuration: '0:18',
-    fileSize: '4.2 MB',
-    tags: ['Video', 'Demo', 'Skia', 'Physics'],
-    invisibleTags: ['particle system', 'react native skia', 'motion graphics', 'gpu rendering'],
-    dominantColors: [
-      { name: 'purple', hex: '#8B5CF6' },
-      { name: 'warm tone', hex: '#D946EF' }
-    ],
-    contextSpace: 'Shipaton',
-    createdAt: '2026-08-08T17:40:00Z',
-    confidenceScore: 0.95,
-    aspectRatio: 1.35,
-  },
-  {
-    id: 'mem-linkedin',
-    type: 'image',
-    title: 'A LinkedIn post listing 10 open source programs for engineering students in 2026.',
-    content: 'A LinkedIn post listing top 10 open source programs for engineering students in 2026. Includes GSoC, GitHub Externship, Linux Foundation, MLH Fellowship, and LFX Mentorships.',
-    imageUrl: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80',
-    ocrText: 'A LinkedIn post listing top 10 open source programs for engineering students in 2026.',
-    tags: ['Screenshot', 'tech', 'student opportunity', 'GitHub', 'career', 'programming', 'internship', 'GSoC', 'engineering'],
-    invisibleTags: ['open source', 'mentorship', 'career growth', 'software developer'],
-    dominantColors: [
-      { name: 'blue', hex: '#3B82F6' },
-      { name: 'ocean', hex: '#1E40AF' }
-    ],
-    contextSpace: 'Shipaton',
-    createdAt: '2026-08-11T12:00:00Z',
-    confidenceScore: 0.98,
-    aspectRatio: 1.25,
-  },
-  {
-    id: 'mem-1',
-    type: 'pricing',
-    title: 'RevenueCat Dynamic Paywall Inspo',
-    content: 'Multi-page storytelling paywalls convert 3.4x better than single pricing tables. Page 1 = Outcome Gate, Page 2 = Social Proof, Page 3 = Trial Pass.',
-    imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
-    ocrText: 'REVENUECAT PAYWALL ANALYTICS: 3-Page Storytelling Flow + Swipe Exit Discount (50% OFF)',
-    tags: ['Pricing', 'RevenueCat', 'Conversion', 'MobileUX'],
-    invisibleTags: ['subscription revenue', 'freemium conversion', 'in-app purchases'],
-    dominantColors: [
-      { name: 'red', hex: '#EF4444' },
-      { name: 'warm tone', hex: '#F97316' }
-    ],
-    contextSpace: 'Pricing',
-    createdAt: '2026-07-15T14:30:00Z',
-    confidenceScore: 0.96,
-    aspectRatio: 1.3,
-  },
-  {
-    id: 'mem-2',
-    type: 'voice',
-    title: 'Voice Note: Synaptic Idea Fusion',
-    content: 'What if we don\'t just store notes like mymind, but use local embeddings to physically converge connected ideas into executable PRDs and RevenueCat paywalls on tap?',
-    audioDuration: '0:42',
-    audioWaveform: [20, 45, 80, 60, 95, 30, 75, 90, 40, 60, 85, 100, 50, 30, 70, 85, 40],
-    tags: ['Idea', 'VoiceMemo', 'AI', 'SynapticFusion', 'BuildPlan'],
-    invisibleTags: ['vector similarity', 'on-device ai', 'autonomous synthesis'],
-    contextSpace: 'Idea',
-    createdAt: '2026-08-11T10:15:00Z',
-    confidenceScore: 0.94,
-    aspectRatio: 0.9,
-  },
-  {
-    id: 'mem-4',
-    type: 'image',
-    title: 'Tactile Node Connection Particle UI',
-    content: 'Skia canvas particle nodes connecting related notes. Glowing synaptic threads connecting pricing models with voice note blurbs.',
-    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-    ocrText: 'SYNAPTIC PARTICLES: Physics-driven node graph with spring tension',
-    tags: ['UI', 'Skia', 'Particles', 'Serendipity'],
-    invisibleTags: ['canvas rendering', 'react native animation', 'graph physics'],
-    dominantColors: [
-      { name: 'purple', hex: '#8B5CF6' },
-      { name: 'violet', hex: '#A855F7' }
-    ],
-    contextSpace: 'Shipaton',
-    createdAt: '2026-08-04T09:00:00Z',
-    confidenceScore: 0.91,
-    aspectRatio: 1.4,
-  },
-  {
-    id: 'mem-6',
-    type: 'whiteboard',
-    title: 'Serendipity Engine Explainability Flow',
-    content: 'Explainable AI connection: 1) Extract entities 2) Calculate cosine distance 3) Highlight exact quotes from past notes to prove relationship.',
-    imageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80',
-    ocrText: 'EXPLAINABILITY PROOF: [ Screenshot Aug 1 ] + [ Voice Note July 14 ]',
-    tags: ['Architecture', 'Serendipity', 'Explainability'],
-    invisibleTags: ['transparent ai', 'proof snippet', 'cosine distance'],
-    dominantColors: [
-      { name: 'charcoal', hex: '#1F2937' },
-      { name: 'monochrome', hex: '#4B5563' }
-    ],
-    contextSpace: 'Shipaton',
-    createdAt: '2026-07-28T11:20:00Z',
-    confidenceScore: 0.88,
-    aspectRatio: 1.25,
   }
 ];
 
 export const seedConnection: SerendipityConnection = {
   id: 'conn-1',
-  sourceMemoryId: 'mem-1',
-  targetMemoryId: 'mem-2',
+  sourceMemoryId: 'mem-paywall-inspo',
+  targetMemoryId: 'mem-voice-shipathon',
   confidenceScore: 0.95,
-  title: 'Dynamic RevenueCat Storytelling Paywall + AI Synaptic Build Plan',
+  title: 'RevenueCat Dashboard Paywalls + AI Synaptic Fusion',
   explainabilityWhy: [
     'Both thoughts focus on converting captured ideas directly into product features.',
-    'Mem-1 provides the pricing strategy (3-Page Storytelling Paywall + Swipe Exit Offer).',
-    'Mem-2 provides the core AI engine (Local embedding convergence into executable Build Plans).'
+    'RevenueCat Dashboard breakdown provides the monetization architecture.',
+    'Voice note provides the core AI engine (Local embedding convergence into executable mobile apps).'
   ],
   evidenceProof: {
-    sourceTitle: 'RevenueCat Dynamic Paywall Inspo (Screenshot)',
-    sourceDate: 'July 15, 2026',
-    targetTitle: 'Voice Note: Synaptic Idea Fusion (Audio)',
-    targetDate: 'August 11, 2026',
-    quoteSnippet: 'Connects RevenueCat 3-Page Storytelling Paywall with auto-generated PRD specs in under 60 seconds.'
+    sourceTitle: 'RevenueCat Dashboard, Paywalls & Charts (YouTube)',
+    sourceDate: 'August 10, 2026',
+    targetTitle: 'Voice Note: Shipathon Submission Vision (Audio)',
+    targetDate: 'August 10, 2026',
+    quoteSnippet: 'Connects RevenueCat Dashboard with AI note-taking vault monetization in under 60 seconds.'
   },
   contextSpace: 'Shipaton',
   suggestedBuildIdea: 'MindMesh AI — Turn scattered thoughts into executable build plans & RevenueCat paywalls.',
   actionableGuidance: {
-    paragraph1: 'Pattern Discovered: Your RevenueCat pricing screenshot from July 15 directly connects with your voice note recorded today. Together, they form a clear product opportunity around automated subscription onboarding and storytelling paywalls.',
-    paragraph2: 'What To Do Next: Rather than letting these saved fragments rot in your camera roll, you can combine the pricing mechanics from your screenshot with your voice note concept to ship a high-converting mobile feature.'
+    paragraph1: 'Pattern Discovered: Your RevenueCat Dashboard & Paywall research directly connects with your voice note recorded for the Shipathon. Together, they form a clear product opportunity around automated subscription onboarding.',
+    paragraph2: 'What To Do Next: Combine the RevenueCat analytics & paywall mechanics with your voice note concept to ship a high-converting mobile feature.'
   },
   nextActions: [
     '1. Validate pricing model (3-Page Storytelling Paywall + 7-Day Free Trial offer).',
-    '2. Configure RevenueCat SDK entitlement checks to gate premium Build Plan exports.',
+    '2. Configure RevenueCat SDK entitlement checks to gate premium exports.',
     '3. Launch a dynamic 50% discount exit offer to capture undecided trial users.'
   ],
   slopGateScore: 100,
   slopGateStatus: 'PASSED',
   slopWordsRemoved: 0,
   hallmarkVerified: true,
+  npuInferenceMs: 34,
 };
 
 export const seedBuildPlan: BuildPlan = {
   id: 'plan-1',
   title: 'MindMesh AI Mobile App & Paywall Spec',
-  subtitle: 'Generated from 2 connected thoughts: RevenueCat Paywall Inspo + Synaptic Voice Note',
-  connectedMemoryIds: ['mem-1', 'mem-2', 'mem-5'],
+  subtitle: 'Generated from 2 connected thoughts: RevenueCat Dashboard + Synaptic Voice Note',
+  connectedMemoryIds: ['mem-paywall-inspo', 'mem-voice-shipathon'],
   prd: {
     problemStatement: 'Founders save dozens of screenshots and voice notes weekly but fail to synthesize them into product specs.',
     targetPersona: 'Indie Hackers, Solo Founders, and Mobile Engineers building for hackathons.',

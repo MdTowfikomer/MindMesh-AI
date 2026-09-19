@@ -184,7 +184,7 @@ export const SettingsModal: React.FC = () => {
             {/* BYOK Hero Card */}
             <View style={styles.heroCard}>
               <View style={styles.heroIconBadge}>
-                <Key size={20} color="#38BDF8" />
+                <Key size={18} color="#F8FAFC" />
               </View>
               <Text style={styles.heroTitle}>Bring Your Own Key (BYOK)</Text>
               <Text style={styles.heroSub}>
@@ -246,7 +246,7 @@ export const SettingsModal: React.FC = () => {
                       activeOpacity={0.85}
                     >
                       <View style={styles.modelChipTop}>
-                        <Cpu size={14} color={isSelected ? '#38BDF8' : '#64748B'} />
+                        <Cpu size={14} color={isSelected ? '#F8FAFC' : '#64748B'} />
                         <Text style={[styles.modelChipName, isSelected && styles.modelChipNameActive]}>
                           {preset.name}
                         </Text>
@@ -265,7 +265,7 @@ export const SettingsModal: React.FC = () => {
                   activeOpacity={0.85}
                 >
                   <View style={styles.modelChipTop}>
-                    <Sparkles size={14} color={isCustomModelActive ? '#38BDF8' : '#64748B'} />
+                    <Sparkles size={14} color={isCustomModelActive ? '#F8FAFC' : '#64748B'} />
                     <Text
                       style={[
                         styles.modelChipName,
@@ -318,9 +318,9 @@ export const SettingsModal: React.FC = () => {
                 activeOpacity={0.85}
               >
                 {isTesting ? (
-                  <ActivityIndicator size="small" color="#38BDF8" />
+                  <ActivityIndicator size="small" color="#CBD5E1" />
                 ) : (
-                  <ShieldCheck size={16} color="#38BDF8" />
+                  <ShieldCheck size={16} color="#CBD5E1" />
                 )}
                 <Text style={styles.testBtnText}>
                   {isTesting ? 'Testing Connection...' : 'Test Connection'}
@@ -415,12 +415,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   saveHeaderBtnActive: {
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#F8FAFC',
   },
   saveHeaderBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#F8FAFC',
+    color: '#0F1015',
   },
   scrollBody: {
     flex: 1,
@@ -435,16 +435,18 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.15)',
+    borderColor: 'rgba(255, 255, 255, 0.08)',
     gap: 8,
   },
   heroIconBadge: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(56, 189, 248, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
   },
   heroTitle: {
     fontSize: 15,
@@ -476,7 +478,7 @@ const styles = StyleSheet.create({
   },
   getKeyLinkText: {
     fontSize: 11,
-    color: '#38BDF8',
+    color: '#CBD5E1',
     fontWeight: '600',
   },
   inputContainer: {
@@ -510,8 +512,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   modelChipActive: {
-    borderColor: '#38BDF8',
-    backgroundColor: 'rgba(56, 189, 248, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   modelChipTop: {
     flexDirection: 'row',
@@ -540,7 +542,7 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 6,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.25)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   customModelInputLabel: {
     fontSize: 10,
@@ -560,8 +562,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   testBtn: {
-    backgroundColor: 'rgba(56, 189, 248, 0.1)',
-    borderColor: 'rgba(56, 189, 248, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 12,
@@ -576,7 +578,7 @@ const styles = StyleSheet.create({
   testBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#38BDF8',
+    color: '#F8FAFC',
   },
   testResultBox: {
     flexDirection: 'row',

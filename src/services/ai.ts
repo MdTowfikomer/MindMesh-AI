@@ -76,7 +76,11 @@ export class AIService {
               paragraph1: `Pattern Discovered: Your thought '${srcLabel}' connects with '${tgtLabel}'. Together, they form an interesting relationship across your notes.`,
               paragraph2: `What To Do Next: Review both thoughts together to expand on the common themes.`
             },
-            nextActions: []
+            nextActions: [],
+            npuInferenceMs: EmbeddingsService.measurePairInferenceMs(
+              `${source.title || ''} ${source.content || ''}`,
+              `${target.title || ''} ${target.content || ''}`
+            ),
           };
 
           // Filter through Hallmark Anti-AI-Slop Gate
