@@ -12,7 +12,8 @@
     "@expo/vector-icons": "^15.0.3",
     "@shopify/react-native-skia": "2.6.2",
     "expo": "^57.0.24",
-    "expo-av": "~16.0.8",
+    "expo-asset": "~57.0.18",
+    "expo-audio": "~57.0.5",
     "expo-blur": "~57.0.3",
     "expo-constants": "~57.0.19",
     "expo-document-picker": "~57.0.2",
@@ -44,14 +45,5 @@
     "@types/react": "~19.2.4",
     "typescript": "~6.0.3"
   },
-  "private": true,
-  "expo": {
-    "doctor": {
-      "reactNativeDirectoryCheck": {
-        "exclude": [
-          "expo-av"
-        ]
-      }
-    }
-  }
+  "private": true
 }

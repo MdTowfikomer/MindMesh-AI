@@ -60,7 +60,7 @@
     "plugins": [
       "expo-router",
       [
-        "expo-av",
+        "expo-audio",
         {
           "microphonePermission": "Allow MindMesh to record voice memos for AI understanding."
         }
@@ -75,7 +75,8 @@
       "expo-font",
       "expo-sharing",
       "expo-status-bar",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

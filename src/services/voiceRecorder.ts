@@ -1,15 +1,40 @@
-import { Audio } from 'expo-av';
+import { Platform } from 'react-native';
+import {
+  AudioModule,
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  type AudioRecorder,
+} from 'expo-audio';
 
 export interface RecordingResult {
   uri: string;
   durationSeconds: number;
 }
 
+function getPlatformRecordingOptions() {
+  const options = RecordingPresets.HIGH_QUALITY;
+  const commonOptions = {
+    extension: options.extension,
+    sampleRate: options.sampleRate,
+    numberOfChannels: options.numberOfChannels,
+    bitRate: options.bitRate,
+    isMeteringEnabled: false,
+  };
+  if (Platform.OS === 'ios') {
+    return { ...commonOptions, ...options.ios };
+  } else if (Platform.OS === 'android') {
+    return { ...commonOptions, ...options.android };
+  } else {
+    return { ...commonOptions, ...options.web };
+  }
+}
+
 /**
- * Voice Recorder Service — real audio recording with expo-av
+ * Voice Recorder Service — audio recording with expo-audio
  */
 export class VoiceRecorderService {
-  private static recording: Audio.Recording | null = null;
+  private static recorder: AudioRecorder | null = null;
   private static startTime: number = 0;
 
   /**
@@ -18,24 +43,25 @@ export class VoiceRecorderService {
   static async startRecording(): Promise<boolean> {
     try {
       // Request permissions
-      const permission = await Audio.requestPermissionsAsync();
+      const permission = await requestRecordingPermissionsAsync();
       if (!permission.granted) {
         console.warn('[VoiceRecorder] Microphone permission denied');
         return false;
       }
 
       // Set audio mode for recording
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
       });
 
-      // Create and start recording
-      const { recording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY
-      );
+      // Create and prepare recorder
+      const platformOptions = getPlatformRecordingOptions();
+      const recorder = new AudioModule.AudioRecorder(platformOptions);
+      await recorder.prepareToRecordAsync();
+      recorder.record();
 
-      this.recording = recording;
+      this.recorder = recorder;
       this.startTime = Date.now();
       return true;
     } catch (error) {
@@ -49,19 +75,22 @@ export class VoiceRecorderService {
    */
   static async stopRecording(): Promise<RecordingResult | null> {
     try {
-      if (!this.recording) return null;
+      if (!this.recorder) return null;
 
-      await this.recording.stopAndUnloadAsync();
+      await this.recorder.stop();
 
       // Reset audio mode
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
+      await setAudioModeAsync({
+        allowsRecording: false,
       });
 
-      const uri = this.recording.getURI();
-      const durationSeconds = Math.round((Date.now() - this.startTime) / 1000);
+      const uri = this.recorder.uri;
+      const durationSeconds = Math.max(
+        1,
+        Math.round(this.recorder.currentTime || (Date.now() - this.startTime) / 1000)
+      );
 
-      this.recording = null;
+      this.recorder = null;
       this.startTime = 0;
 
       if (!uri) return null;
@@ -69,7 +98,7 @@ export class VoiceRecorderService {
       return { uri, durationSeconds };
     } catch (error) {
       console.warn('[VoiceRecorder] Failed to stop recording:', error);
-      this.recording = null;
+      this.recorder = null;
       return null;
     }
   }
@@ -78,6 +107,6 @@ export class VoiceRecorderService {
    * Check if currently recording
    */
   static isRecording(): boolean {
-    return this.recording !== null;
+    return this.recorder !== null && (this.recorder.isRecording ?? false);
   }
 }

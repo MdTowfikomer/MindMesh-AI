@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, type AudioPlayer } from 'expo-audio';
 import * as FileSystem from 'expo-file-system/legacy';
 
 // Generate a subtle, crisp paper crumple WAV audio
@@ -107,8 +107,8 @@ function generateSaveChimeWavBase64(): string {
   return btoa(binary);
 }
 
-let crumpleSoundObject: Audio.Sound | null = null;
-let saveSoundObject: Audio.Sound | null = null;
+let crumplePlayer: AudioPlayer | null = null;
+let savePlayer: AudioPlayer | null = null;
 let crumpleFileUri: string | null = null;
 let saveFileUri: string | null = null;
 
@@ -127,15 +127,15 @@ export const SoundEffects = {
         });
       }
 
-      if (crumpleSoundObject) {
-        await crumpleSoundObject.unloadAsync();
+      if (crumplePlayer) {
+        try {
+          crumplePlayer.remove();
+        } catch {}
       }
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: crumpleFileUri },
-        { shouldPlay: true, volume: 0.35 } // Lowered to subtle comfortable level
-      );
-      crumpleSoundObject = sound;
+      crumplePlayer = createAudioPlayer({ uri: crumpleFileUri });
+      crumplePlayer.volume = 0.35; // Subtle comfortable level
+      crumplePlayer.play();
     } catch (err) {
       console.log('Crumple sound fallback:', err);
     }
@@ -154,15 +154,15 @@ export const SoundEffects = {
         });
       }
 
-      if (saveSoundObject) {
-        await saveSoundObject.unloadAsync();
+      if (savePlayer) {
+        try {
+          savePlayer.remove();
+        } catch {}
       }
 
-      const { sound } = await Audio.Sound.createAsync(
-        { uri: saveFileUri },
-        { shouldPlay: true, volume: 0.35 } // Gentle pleasant chime
-      );
-      saveSoundObject = sound;
+      savePlayer = createAudioPlayer({ uri: saveFileUri });
+      savePlayer.volume = 0.35; // Gentle pleasant chime
+      savePlayer.play();
     } catch (err) {
       console.log('Save sound fallback:', err);
     }
