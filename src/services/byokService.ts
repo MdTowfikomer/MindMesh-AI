@@ -16,10 +16,10 @@ export interface ModelPreset {
 }
 
 export const GEMINI_MODEL_PRESETS: ModelPreset[] = [
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Recommended • Fast, smart & multimodal', isDefault: true },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Next-gen multimodal speed & precision' },
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Economical, high-throughput & reliable' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Complex reasoning & deep synthesis' },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', description: 'Recommended • Fast, smart & multimodal agentic reasoning', isDefault: true },
+  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', description: 'Ultra-low latency & cost-efficient parsing' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Balanced price-performance for high volume' },
+  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', description: 'Lightweight rapid tag synthesis' },
 ];
 
 const STORAGE_KEY = 'byok_gemini_config';
@@ -28,15 +28,16 @@ export class ByokService {
   private static cachedConfig: BYOKConfig | null = null;
 
   /**
-   * Resolves model names to valid Google AI Studio endpoints
+   * Resolves model names to active Google AI Studio endpoints.
+   * Gracefully redirects deprecated/shut-down models (e.g. 1.5-flash, 2.0-flash) to active 3.5-flash.
    */
   public static resolveModel(modelName?: string | null): string {
-    if (!modelName) return 'gemini-2.5-flash';
-    // Map non-existent or legacy 3.x identifiers to official frontier 2.5 flash
-    if (modelName.startsWith('gemini-3.')) {
-      return 'gemini-2.5-flash';
+    if (!modelName) return 'gemini-3.5-flash';
+    const trimmed = modelName.trim();
+    if (trimmed.startsWith('gemini-1.5') || trimmed.startsWith('gemini-2.0')) {
+      return 'gemini-3.5-flash';
     }
-    return modelName.trim();
+    return trimmed;
   }
 
   public static async loadConfig(): Promise<BYOKConfig> {
@@ -58,7 +59,7 @@ export class ByokService {
 
     this.cachedConfig = {
       apiKey: null,
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       isVerified: false,
     };
     return this.cachedConfig;
@@ -76,7 +77,7 @@ export class ByokService {
   public static async clearConfig(): Promise<void> {
     this.cachedConfig = {
       apiKey: null,
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.5-flash',
       isVerified: false,
     };
     try {
@@ -96,7 +97,7 @@ export class ByokService {
    */
   public static async testConnection(
     apiKey: string,
-    model: string = 'gemini-2.5-flash'
+    model: string = 'gemini-3.5-flash'
   ): Promise<{ success: boolean; latencyMs: number; error?: string }> {
     const cleanKey = apiKey.trim();
     if (!cleanKey) {
