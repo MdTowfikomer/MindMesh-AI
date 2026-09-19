@@ -179,10 +179,19 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
         set({ activeBuildPlan: sqliteBuildPlan });
       }
 
-      // Load stored connections
+      // Load stored connections & purge any legacy connections built from non-generated titles or seed memories
       const sqliteConnections = await SQLiteDatabaseService.getAllConnections();
       if (sqliteConnections.length > 0) {
-        set({ connections: sqliteConnections });
+        const { isInvalidConnection } = await import('../services/knowledgeGraph');
+        const validConnections: SerendipityConnection[] = [];
+        for (const conn of sqliteConnections) {
+          if (isInvalidConnection(conn, freshMemories)) {
+            await SQLiteDatabaseService.deleteConnection(conn.id);
+          } else {
+            validConnections.push(conn);
+          }
+        }
+        set({ connections: validConnections });
       }
     } catch (error) {
       console.error('[MemoryStore] Failed to load stored memories from SQLite:', error);
@@ -389,23 +398,19 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
 
   generateConnections: async () => {
     const state = useMemoryStore.getState();
-    const SEED_IDS = new Set([
-      'mem-shipathon-official',
-      'mem-paywall-inspo',
-      'mem-voice-shipathon',
-      'mem-quote-pg',
-      'mem-synaptic-arch',
-      'mem-article-1',
-      'mem-video-1',
-      'mem-linkedin',
-      'mem-1',
-      'mem-2',
-      'mem-4',
-      'mem-6',
-      'mem-quote-1',
-    ]);
-    const userMemories = state.memories.filter((m) => !SEED_IDS.has(m.id));
-    if (userMemories.length < 2 || state.isGeneratingConnections) return;
+    const { isEligibleForDiscovery, isInvalidConnection } = await import('../services/knowledgeGraph');
+    const eligibleMemories = state.memories.filter((m) => isEligibleForDiscovery(m));
+
+    if (eligibleMemories.length < 2 || state.isGeneratingConnections) {
+      if (!state.isGeneratingConnections) {
+        useMemoryStore.getState().showToast(
+          'Save 2+ thoughts with real titles or notes to discover connections.',
+          'error',
+          3500
+        );
+      }
+      return;
+    }
 
     set({ isGeneratingConnections: true, isSynapticFusing: true });
 
@@ -419,11 +424,11 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
       });
 
       const { connection, isFallback } = await SerendipityEngine.discoverConnection(
-        userMemories,
+        eligibleMemories,
         existingPairKeys
       );
 
-      if (connection) {
+      if (connection && !isInvalidConnection(connection, eligibleMemories)) {
         await SQLiteDatabaseService.saveConnection(connection);
         set((s) => ({
           connections: [connection, ...s.connections],

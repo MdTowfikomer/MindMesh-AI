@@ -55,7 +55,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
       const hasCustom = await ByokService.hasCustomKey();
       if (hasCustom) {
         const config = await ByokService.loadConfig();
-        const customModel = config.model || 'gemini-3.5-flash';
+        const customModel = ByokService.resolveModel(config.model);
         console.log(`[VisionAI] 🚀 Executing direct on-device Gemini call with User BYOK Key (${customModel})`);
         RemoteLogger.info("🔑 Executing Vision AI request with User's BYOK Gemini API Key", {
           model: customModel,
@@ -105,7 +105,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
           console.warn('[VisionAI] BYOK direct call error, using local fallback:', byokErr);
           RemoteLogger.warn('BYOK direct call failed, using local fallback', { error: byokErr?.message }, 'VisionAI-BYOK');
         }
-        return this.getFallbackResult();
+        return this.getFallbackResult(imageUri);
       }
 
       // ─── Stage 2: Default Mode (No Custom Key) ───
@@ -116,7 +116,7 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
         imageSizeKb: Math.round(base64.length / 1024),
       }, 'VisionAI-LocalFallback');
 
-      return this.getFallbackResult();
+      return this.getFallbackResult(resolvedUri);
     } catch (error: any) {
       console.error('[VisionAI] ❌ Exception in analyzeImage:', error);
       RemoteLogger.error('Vision AI failed to read or upload image', {
@@ -195,18 +195,24 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
     return 'image/jpeg';
   }
 
-  private static getFallbackResult(): VisionAnalysisResult {
-    const now = new Date();
-    const dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  private static getFallbackResult(imageUri?: string): VisionAnalysisResult {
+    let extractedTopic = '';
+    if (imageUri) {
+      const filename = imageUri.split('/').pop()?.split('?')[0] || '';
+      const name = filename.replace(/\.(jpg|jpeg|png|webp|gif|heic)$/i, '').replace(/[-_]/g, ' ').trim();
+      if (name && !/^\d+$/.test(name) && !/^(img|image|screenshot|photo|file)/i.test(name)) {
+        extractedTopic = name.charAt(0).toUpperCase() + name.slice(1);
+      }
+    }
 
+    const title = extractedTopic ? `Visual Capture: ${extractedTopic}` : 'Visual Idea Capture';
     return {
-      title: `Saved ${dateStr} at ${timeStr}`,
-      tldr: '',
-      tags: ['Image'],
+      title,
+      tldr: extractedTopic ? `Captured visual note on ${extractedTopic}` : '',
+      tags: extractedTopic ? ['Visual', extractedTopic] : ['Visual'],
       classification: 'image',
       ocrText: '',
-      confidenceScore: 0.90,
+      confidenceScore: 0.85,
     };
   }
 }

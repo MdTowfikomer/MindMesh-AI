@@ -21,21 +21,10 @@ import {
   X,
 } from '../../src/components/Icons';
 
-const SEED_IDS = new Set([
-  'mem-shipathon-official',
-  'mem-paywall-inspo',
-  'mem-voice-shipathon',
-  'mem-quote-pg',
-  'mem-synaptic-arch',
-  'mem-article-1',
-  'mem-video-1',
-  'mem-linkedin',
-  'mem-1',
-  'mem-2',
-  'mem-4',
-  'mem-6',
-  'mem-quote-1',
-]);
+import {
+  isEligibleForDiscovery,
+  isInvalidConnection,
+} from '../../src/services/knowledgeGraph';
 
 export default function DiscoverScreen() {
   const {
@@ -51,8 +40,10 @@ export default function DiscoverScreen() {
     byokConfig,
   } = useMemoryStore();
 
-  const userMemoriesCount = memories.filter((m) => !SEED_IDS.has(m.id)).length;
+  const eligibleMemories = memories.filter((m) => isEligibleForDiscovery(m));
+  const userMemoriesCount = eligibleMemories.length;
   const isByokConfigured = !!(byokConfig.apiKey && byokConfig.apiKey.trim().length > 10);
+  const validConnections = connections.filter((conn) => !isInvalidConnection(conn, memories));
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -137,22 +128,22 @@ export default function DiscoverScreen() {
           </View>
         )}
 
-        {connections.length > 0 && (
-          <Text style={styles.sectionHeader}>DISCOVERED PATTERNS ({connections.length})</Text>
+        {validConnections.length > 0 && (
+          <Text style={styles.sectionHeader}>DISCOVERED PATTERNS ({validConnections.length})</Text>
         )}
 
-        {connections.length === 0 && !isGeneratingConnections ? (
+        {validConnections.length === 0 && !isGeneratingConnections ? (
           <View style={styles.emptyStateContainer}>
             <Compass size={36} color="#64748B" />
             <Text style={styles.emptyStateTitle}>No Patterns Discovered Yet</Text>
             <Text style={styles.emptyStateSub}>
               {userMemoriesCount < 2
-                ? 'Save 2 or more thoughts, screenshots, or links — then tap Discover.'
+                ? 'Save 2 or more thoughts with real titles or notes — then tap Discover.'
                 : 'Tap "Discover New Connections" above to run knowledge graph matching across your vault.'}
             </Text>
           </View>
         ) : (
-          connections.map((conn) => {
+          validConnections.map((conn) => {
             const sourceMem = memories.find((m) => m.id === conn.sourceMemoryId);
             const targetMem = memories.find((m) => m.id === conn.targetMemoryId);
 

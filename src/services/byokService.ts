@@ -16,11 +16,10 @@ export interface ModelPreset {
 }
 
 export const GEMINI_MODEL_PRESETS: ModelPreset[] = [
-  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', description: 'Recommended • Fast, smart & balanced', isDefault: true },
-  { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash', description: 'Advanced reasoning & high precision' },
-  { id: 'gemini-3.1-flash-lite', name: 'Gemini 3.1 Flash Lite', description: 'Ultra-low latency & economical' },
-  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', description: 'Lightweight rapid tag synthesis' },
-  { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', description: 'Frontier multimodal architecture' },
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Recommended • Fast, smart & multimodal', isDefault: true },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Next-gen multimodal speed & precision' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash', description: 'Economical, high-throughput & reliable' },
+  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', description: 'Complex reasoning & deep synthesis' },
 ];
 
 const STORAGE_KEY = 'byok_gemini_config';
@@ -28,13 +27,29 @@ const STORAGE_KEY = 'byok_gemini_config';
 export class ByokService {
   private static cachedConfig: BYOKConfig | null = null;
 
+  /**
+   * Resolves model names to valid Google AI Studio endpoints
+   */
+  public static resolveModel(modelName?: string | null): string {
+    if (!modelName) return 'gemini-2.5-flash';
+    // Map non-existent or legacy 3.x identifiers to official frontier 2.5 flash
+    if (modelName.startsWith('gemini-3.')) {
+      return 'gemini-2.5-flash';
+    }
+    return modelName.trim();
+  }
+
   public static async loadConfig(): Promise<BYOKConfig> {
     if (this.cachedConfig) return this.cachedConfig;
 
     try {
       const raw = await SQLiteDatabaseService.getSetting(STORAGE_KEY);
       if (raw) {
-        this.cachedConfig = JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        this.cachedConfig = {
+          ...parsed,
+          model: this.resolveModel(parsed.model),
+        };
         return this.cachedConfig!;
       }
     } catch (e) {
@@ -43,7 +58,7 @@ export class ByokService {
 
     this.cachedConfig = {
       apiKey: null,
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       isVerified: false,
     };
     return this.cachedConfig;
@@ -61,7 +76,7 @@ export class ByokService {
   public static async clearConfig(): Promise<void> {
     this.cachedConfig = {
       apiKey: null,
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       isVerified: false,
     };
     try {
@@ -81,16 +96,17 @@ export class ByokService {
    */
   public static async testConnection(
     apiKey: string,
-    model: string = 'gemini-3.5-flash'
+    model: string = 'gemini-2.5-flash'
   ): Promise<{ success: boolean; latencyMs: number; error?: string }> {
     const cleanKey = apiKey.trim();
     if (!cleanKey) {
       return { success: false, latencyMs: 0, error: 'API key cannot be empty' };
     }
 
+    const resolvedModel = this.resolveModel(model);
     const t0 = Date.now();
     try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.trim()}:generateContent?key=${cleanKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${resolvedModel}:generateContent?key=${cleanKey}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,7 +152,7 @@ export class ByokService {
     if (!config.apiKey) return null;
 
     try {
-      const model = config.model || 'gemini-3.5-flash';
+      const model = this.resolveModel(config.model);
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`;
       const res = await fetch(url, {
         method: 'POST',

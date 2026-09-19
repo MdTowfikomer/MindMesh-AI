@@ -2,7 +2,7 @@ import { MemoryItem, SerendipityConnection, MemoryType } from '../types/mindmesh
 import { SlopGate } from './slopGate';
 import { EmbeddingsService } from './embeddings';
 
-// Common English stop words to exclude from lexical token overlap
+// Common English stop words plus date, temporal, and generic placeholder terms
 const STOP_WORDS = new Set([
   'a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any', 'are', 'aren',
   'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below', 'between', 'both', 'but', 'by',
@@ -14,7 +14,119 @@ const STOP_WORDS = new Set([
   'than', 'that', 'the', 'their', 'theirs', 'them', 'themselves', 'then', 'there', 'these', 'they',
   'this', 'those', 'through', 'to', 'too', 'under', 'until', 'up', 'very', 'was', 'we', 'were', 'what',
   'when', 'where', 'which', 'while', 'who', 'whom', 'why', 'with', 'would', 'you', 'your', 'yours',
+  // Temporal, date, month and generic capture placeholders (never allow these to match as "overlapping concepts")
+  'saved', 'saving', 'save', 'image', 'images', 'photo', 'photos', 'picture', 'pictures', 'screenshot', 'screenshots',
+  'doc', 'docs', 'document', 'documents', 'file', 'files', 'content', 'item', 'items', 'note', 'notes',
+  'jan', 'january', 'feb', 'february', 'mar', 'march', 'apr', 'april', 'may', 'jun', 'june',
+  'jul', 'july', 'aug', 'august', 'sep', 'sept', 'september', 'oct', 'october', 'nov', 'november', 'dec', 'december',
+  'hour', 'hours', 'minute', 'minutes', 'min', 'sec', 'time', 'date', 'year', 'day', 'today', 'yesterday',
 ]);
+
+export const SEED_MEMORY_IDS = new Set([
+  'mem-shipathon-official',
+  'mem-paywall-inspo',
+  'mem-voice-shipathon',
+  'mem-quote-pg',
+  'mem-synaptic-arch',
+  'mem-article-1',
+  'mem-video-1',
+  'mem-linkedin',
+  'mem-1',
+  'mem-2',
+  'mem-4',
+  'mem-6',
+  'mem-quote-1',
+]);
+
+const GENERIC_TAGS = new Set([
+  'image', 'images', 'photo', 'photos', 'screenshot', 'screenshots',
+  'saved', 'visual', 'document', 'documents', 'note', 'notes', 'general', 'all',
+]);
+
+/**
+ * Checks if a title is a raw non-generated timestamp/placeholder like "Saved 22 Aug at 04:13"
+ */
+export function isNonGeneratedTitle(title?: string | null): boolean {
+  if (!title) return true;
+  const trimmed = title.trim();
+  // Matches "Saved 22 Aug at 04:13", "Saved 21 Aug", "Saved Aug 22", "Saved 2026-08-22", "Saved at 04:13"
+  if (/^saved\s+(?:\d{1,2}\s+[a-z]{3}|[a-z]{3}\s+\d{1,2}|\d{4}[-/]\d{2}[-/]\d{2}|\d{1,2}[-/]\d{1,2}|at\s+\d{1,2}:\d{2})/i.test(trimmed)) {
+    return true;
+  }
+  if (/^saved\s+\d+/i.test(trimmed)) {
+    return true;
+  }
+  if (/^saved\b/i.test(trimmed) && trimmed.length < 25) {
+    return true;
+  }
+  if (/^(image|photo|screenshot|document|memo|note|thought)\s*$/i.test(trimmed)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Determines whether a memory is eligible for Discovery cross-pollination.
+ * Excludes seed memories and raw un-analyzed placeholders with non-generated titles.
+ */
+export function isEligibleForDiscovery(memory: MemoryItem): boolean {
+  // Exclude seed memories and sample content
+  if (SEED_MEMORY_IDS.has(memory.id) || memory.id.startsWith('mem-seed-') || memory.id.startsWith('seed-')) {
+    return false;
+  }
+  // Exclude deleted memories
+  if (memory.deletedAt) {
+    return false;
+  }
+  // Exclude memories with non-generated raw placeholder titles (like "Saved 22 Aug at 04:13")
+  // unless the memory has real, substantive user/OCR text (>40 chars)
+  if (isNonGeneratedTitle(memory.title)) {
+    const hasSubstantialContent =
+      (memory.content && memory.content.trim().length > 40) ||
+      (memory.ocrText && memory.ocrText.trim().length > 40);
+    if (!hasSubstantialContent) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Validates whether a connection is valid or if it was built from non-generated titles or seed memories
+ */
+export function isInvalidConnection(conn: SerendipityConnection, memories: MemoryItem[] = []): boolean {
+  // Check connection ID or seed connection
+  if (conn.id === 'conn-1' || conn.id.startsWith('conn-seed-')) {
+    return true;
+  }
+  // Check connection title for non-generated patterns (e.g. "Saved 22 Aug at 04:13 × Saved 21 Aug at 01:40")
+  if (conn.title) {
+    if (/saved\s+\d+.*×.*saved\s+\d+/i.test(conn.title)) {
+      return true;
+    }
+  }
+  // Check source and target IDs against seed IDs
+  if (SEED_MEMORY_IDS.has(conn.sourceMemoryId) || SEED_MEMORY_IDS.has(conn.targetMemoryId)) {
+    return true;
+  }
+  // Check against memory items if available
+  if (memories.length > 0) {
+    const src = memories.find((m) => m.id === conn.sourceMemoryId);
+    const tgt = memories.find((m) => m.id === conn.targetMemoryId);
+    if (!src || !tgt) return true;
+    if (!isEligibleForDiscovery(src) || !isEligibleForDiscovery(tgt)) {
+      return true;
+    }
+  } else {
+    // Check evidence proof titles
+    const srcTitle = conn.evidenceProof?.sourceTitle;
+    const tgtTitle = conn.evidenceProof?.targetTitle;
+    if (isNonGeneratedTitle(srcTitle) || isNonGeneratedTitle(tgtTitle)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 export interface GraphEvidence {
   sharedTags: string[];
@@ -68,13 +180,22 @@ export class KnowledgeGraphEngine {
   }
 
   /**
-   * Collects all entity and tag identifiers for a memory item
+   * Collects all entity and tag identifiers for a memory item, filtering out generic placeholders
    */
   public static getEntityTags(memory: MemoryItem): Set<string> {
     const tags = new Set<string>();
-    (memory.tags || []).forEach((t) => tags.add(t.toLowerCase().trim()));
-    (memory.invisibleTags || []).forEach((t) => tags.add(t.toLowerCase().trim()));
-    (memory.entities || []).forEach((e) => tags.add(e.name.toLowerCase().trim()));
+    (memory.tags || []).forEach((t) => {
+      const clean = t.toLowerCase().trim();
+      if (!GENERIC_TAGS.has(clean)) tags.add(clean);
+    });
+    (memory.invisibleTags || []).forEach((t) => {
+      const clean = t.toLowerCase().trim();
+      if (!GENERIC_TAGS.has(clean)) tags.add(clean);
+    });
+    (memory.entities || []).forEach((e) => {
+      const clean = e.name.toLowerCase().trim();
+      if (!GENERIC_TAGS.has(clean)) tags.add(clean);
+    });
     return tags;
   }
 
@@ -220,28 +341,41 @@ export class KnowledgeGraphEngine {
   }
 
   /**
-   * Finds the highest-scoring novel (undiscovered) pair across all active user memories.
+   * Finds the highest-scoring novel (undiscovered) pair across eligible active user memories.
    * Deterministic: Given the same memories and existing connections, produces the exact same top pair.
+   * Excludes raw non-generated placeholder titles (like "Saved 22 Aug at 04:13") and seed memories.
    */
   public static findTopNovelPair(
     memories: MemoryItem[],
     existingPairKeys: Set<string> = new Set()
   ): ScoredPair | null {
-    if (memories.length < 2) return null;
+    // Quality Gate: Only consider user memories with real, generated titles or substantial content
+    const eligibleMemories = memories.filter((m) => isEligibleForDiscovery(m));
+    if (eligibleMemories.length < 2) return null;
 
     const scoredPairs: ScoredPair[] = [];
 
-    for (let i = 0; i < memories.length; i++) {
-      for (let j = i + 1; j < memories.length; j++) {
-        const memA = memories[i];
-        const memB = memories[j];
+    for (let i = 0; i < eligibleMemories.length; i++) {
+      for (let j = i + 1; j < eligibleMemories.length; j++) {
+        const memA = eligibleMemories[i];
+        const memB = eligibleMemories[j];
         const pairKey = this.getPairKey(memA.id, memB.id);
 
         // Deduplication: skip previously discovered pairs
         if (existingPairKeys.has(pairKey)) continue;
 
         const scored = this.evaluatePair(memA, memB);
-        scoredPairs.push(scored);
+
+        // Quality Gate: require non-trivial score and actual semantic evidence
+        // (Must have real shared specific tags, shared entities, or at least 2 non-stopword matched keywords)
+        const hasSubstantiveEvidence =
+          scored.evidence.sharedTags.length > 0 ||
+          scored.evidence.sharedEntities.length > 0 ||
+          scored.evidence.matchedKeywords.length >= 2;
+
+        if (scored.score >= 0.20 && hasSubstantiveEvidence) {
+          scoredPairs.push(scored);
+        }
       }
     }
 
