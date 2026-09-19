@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   playOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     justifyContent: 'center',
     alignItems: 'center',
   },

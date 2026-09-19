@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     color: theme.colors.auroraAmber,
   },
   exitOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     backgroundColor: 'rgba(15, 23, 42, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',

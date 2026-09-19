@@ -89,7 +89,7 @@ export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => 
         locations={[0, 0.35, 0.6, 0.85, 1.0]}
         start={{ x: 0.5, y: 0.0 }}
         end={{ x: 0.5, y: 1.0 }}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill as any}
       />
 
       {/* 2. High-Res Flow Swirl Image Texture */}
@@ -111,7 +111,7 @@ export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => 
       <LinearGradient
         colors={['rgba(9, 10, 20, 0.75)', 'transparent', 'rgba(18, 20, 46, 0.4)']}
         locations={[0, 0.45, 1.0]}
-        style={StyleSheet.absoluteFillObject}
+        style={StyleSheet.absoluteFill as any}
       />
 
       {/* 4. Serendipity Discovery Content */}
@@ -138,7 +138,7 @@ export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => 
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     zIndex: 9999,
     justifyContent: 'center',
     alignItems: 'center',

@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   ambientGlow: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     backgroundColor: 'rgba(157, 78, 221, 0.15)',
     borderRadius: CyberTheme.radii.lg,
     shadowColor: CyberTheme.colors.cyan,

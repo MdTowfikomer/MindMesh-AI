@@ -7,11 +7,6 @@
     "icon": "./assets/icon.png",
     "scheme": "mindmesh",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FAFAF9"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.mindmesh.ai"
@@ -76,7 +71,11 @@
           "photosPermission": "Allow MindMesh to select screenshots for AI analysis."
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-font",
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true

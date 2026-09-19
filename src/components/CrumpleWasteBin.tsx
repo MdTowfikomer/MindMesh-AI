@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   meshGridOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     borderTopWidth: 6,

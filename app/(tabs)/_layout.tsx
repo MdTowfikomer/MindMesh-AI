@@ -14,7 +14,7 @@ export default function TabLayout() {
 
   return (
     <>
-      <StatusBar style="light" backgroundColor="#101114" />
+      <StatusBar style="light" />
       <Tabs
       screenOptions={{
         headerShown: false,
@@ -40,7 +40,7 @@ export default function TabLayout() {
         options={{
           title: 'Memory Feed',
           tabBarLabel: 'Memories',
-          tabBarIcon: ({ color, size }) => <LayoutGrid size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <LayoutGrid size={size - 2} color={color as string} />,
         }}
       />
 
@@ -50,7 +50,7 @@ export default function TabLayout() {
           title: 'Discovery',
           tabBarLabel: 'Discovery',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Sparkles size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Sparkles size={size - 2} color={color as string} />,
         }}
       />
 
@@ -60,7 +60,7 @@ export default function TabLayout() {
           title: 'Serendipity',
           tabBarLabel: 'Serendipity',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <RotateCcw size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <RotateCcw size={size - 2} color={color as string} />,
         }}
       />
 
@@ -70,7 +70,7 @@ export default function TabLayout() {
           title: 'Spaces',
           tabBarLabel: 'Spaces',
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Folder size={size - 2} color={color} />,
+          tabBarIcon: ({ color, size }) => <Folder size={size - 2} color={color as string} />,
         }}
       />
     </Tabs>

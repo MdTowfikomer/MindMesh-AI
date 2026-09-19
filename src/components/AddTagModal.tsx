@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   outsideOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...(StyleSheet.absoluteFill as any),
   },
   modalCard: {
     backgroundColor: '#181A20',
