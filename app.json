@@ -76,7 +76,19 @@
       "expo-sharing",
       "expo-status-bar",
       "expo-splash-screen",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow MindMesh to capture whiteboards, notes, and visual inspirations."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow MindMesh to access recent photos for visual thought capture."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

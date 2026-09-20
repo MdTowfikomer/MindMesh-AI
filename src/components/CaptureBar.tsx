@@ -18,14 +18,18 @@ import { VisionAIService } from '../services/visionAI';
 import { VoiceRecorderService } from '../services/voiceRecorder';
 import { AudioTranscriptionService } from '../services/audioTranscription';
 import { FullThoughtEditorModal } from './FullThoughtEditorModal';
+import { CameraCaptureModal } from './CameraCaptureModal';
 import { RemoteLogger } from '../services/logger';
+
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const CaptureBar: React.FC = () => {
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+
 
   const { addMemory, triggerSynapticFusion, setIsSaving, showToast } = useMemoryStore();
 
@@ -143,16 +147,9 @@ export const CaptureBar: React.FC = () => {
       await handlePickGallery();
       return;
     }
-    Alert.alert(
-      'Visual Capture',
-      'Choose capture source:',
-      [
-        { text: '📸 Camera (Whiteboard / Docs)', onPress: handleTakePhoto },
-        { text: '🖼️ Photos & Screenshots', onPress: handlePickGallery },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
+    setIsCameraModalOpen(true);
   };
+
 
   const handlePickPdf = async () => {
     CyberTheme.haptics.light();
@@ -263,9 +260,15 @@ export const CaptureBar: React.FC = () => {
       </View>
 
       <FullThoughtEditorModal visible={isEditorOpen} onClose={() => setIsEditorOpen(false)} />
+      <CameraCaptureModal
+        visible={isCameraModalOpen}
+        onClose={() => setIsCameraModalOpen(false)}
+        onCapture={processImageUri}
+      />
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

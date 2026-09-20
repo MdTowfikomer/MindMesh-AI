@@ -234,3 +234,24 @@ export const EyeOff: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }
 export const Cpu: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
   <Feather name="cpu" size={size} color={color} style={style} />
 );
+
+export const FlashOn: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Ionicons name="flash" size={size} color={color} style={style} />
+);
+
+export const FlashOff: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Ionicons name="flash-off" size={size} color={color} style={style} />
+);
+
+export const CameraFlip: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Ionicons name="camera-reverse-outline" size={size} color={color} style={style} />
+);
+
+export const MagicWand: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <MaterialCommunityIcons name="auto-fix" size={size} color={color} style={style} />
+);
+
+export const PhotoLibrary: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Ionicons name="images-outline" size={size} color={color} style={style} />
+);
+
