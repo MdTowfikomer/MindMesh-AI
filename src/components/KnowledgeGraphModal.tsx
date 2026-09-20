@@ -365,9 +365,8 @@ export const KnowledgeGraphModal: React.FC = () => {
                   ]}
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   onPress={() => {
-                    CyberTheme.haptics.medium();
-                    setSelectedNodeId(node.id);
-                    openMemoryDetail(node.memory);
+                    CyberTheme.haptics.light();
+                    setSelectedNodeId(isSelected ? null : node.id);
                   }}
                   activeOpacity={0.7}
                 >
