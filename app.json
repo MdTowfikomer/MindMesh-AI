@@ -86,9 +86,11 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "Allow MindMesh to access recent photos for visual thought capture."
+          "photosPermission": "Allow MindMesh to access recent photos for visual thought capture.",
+          "granularPermissions": ["photo"]
         }
       ]
+
     ],
     "experiments": {
       "typedRoutes": true

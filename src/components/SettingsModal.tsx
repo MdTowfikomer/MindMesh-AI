@@ -25,14 +25,23 @@ import {
   Globe,
   Trash2,
   Sparkles,
+  Share2,
+  FileText,
 } from './Icons';
 import { useMemoryStore } from '../stores/memoryStore';
 import { ByokService, GEMINI_MODEL_PRESETS, BYOKConfig } from '../services/byokService';
+import { VaultExporterService } from '../services/vaultExporter';
 import { CyberTheme } from '../theme/cyberLuxury';
 
 export const SettingsModal: React.FC = () => {
-  const { isSettingsModalVisible, closeSettingsModal, byokConfig, setByokConfig, showToast } =
-    useMemoryStore();
+  const {
+    isSettingsModalVisible,
+    closeSettingsModal,
+    byokConfig,
+    setByokConfig,
+    showToast,
+    openKnowledgeGraph,
+  } = useMemoryStore();
 
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('gemini-3.5-flash');
@@ -363,6 +372,52 @@ export const SettingsModal: React.FC = () => {
               </Text>
             </View>
 
+            {/* Knowledge Graph & Data Portability Section */}
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>NEURAL GRAPH & DATA PORTABILITY</Text>
+
+              <TouchableOpacity
+                style={styles.exportCardBtn}
+                onPress={() => {
+                  closeSettingsModal();
+                  openKnowledgeGraph();
+                }}
+                activeOpacity={0.85}
+              >
+                <Sparkles size={16} color="#94A3B8" />
+                <View style={styles.exportCardTextCol}>
+                  <Text style={styles.exportCardTitle}>Launch Knowledge Graph</Text>
+                  <Text style={styles.exportCardSub}>Interactive 2D neural node network of your vault</Text>
+                </View>
+              </TouchableOpacity>
+
+              <View style={styles.exportRow}>
+                <TouchableOpacity
+                  style={styles.exportHalfBtn}
+                  onPress={async () => {
+                    const success = await VaultExporterService.exportVaultJson();
+                    if (success) showToast('Exported Mind Vault JSON backup!', 'success');
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Share2 size={14} color="#CBD5E1" />
+                  <Text style={styles.exportHalfBtnText}>Export JSON Vault</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.exportHalfBtn}
+                  onPress={async () => {
+                    const success = await VaultExporterService.exportVaultMarkdownIndex();
+                    if (success) showToast('Exported Obsidian Markdown index!', 'success');
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <FileText size={14} color="#CBD5E1" />
+                  <Text style={styles.exportHalfBtnText}>Export Markdown (.md)</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             {/* Remove Key / Reset Button */}
             {byokConfig.apiKey && (
               <TouchableOpacity
@@ -634,5 +689,51 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#E11D48',
     fontWeight: '600',
+  },
+  exportCardBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#181A20',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  exportCardTextCol: {
+    flex: 1,
+  },
+  exportCardTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F8FAFC',
+  },
+  exportCardSub: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  exportRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  exportHalfBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#181A20',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  exportHalfBtnText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#CBD5E1',
   },
 });

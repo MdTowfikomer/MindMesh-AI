@@ -13,6 +13,7 @@ import { MemoryItem } from '../types/mindmesh';
 import { Trash2, CheckCircle2, RefreshCw } from './Icons';
 import { SoundEffects } from '../services/soundEffects';
 import { CrumpleWasteBin } from './CrumpleWasteBin';
+import { useMemoryStore } from '../stores/memoryStore';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SWIPE_THRESHOLD = 0.25 * SCREEN_WIDTH;
@@ -40,6 +41,13 @@ export const RediscoverySwipeDeck: React.FC<RediscoverySwipeDeckProps> = ({
   const crumpleY = useRef(new Animated.Value(0)).current;
   const binTimeoutRef = useRef<any>(null);
 
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
+
+  const memoriesRef = useRef(memories);
+  memoriesRef.current = memories;
+
+  const getCurrentMemory = () => memoriesRef.current[currentIndexRef.current];
   const currentMemory = memories[currentIndex];
 
   const panResponder = useRef(
@@ -52,10 +60,17 @@ export const RediscoverySwipeDeck: React.FC<RediscoverySwipeDeckProps> = ({
       },
       onPanResponderRelease: (_, gestureState) => {
         if (isCrumpling) return;
+        const activeMemory = getCurrentMemory();
         if (gestureState.dx > SWIPE_THRESHOLD) {
           handleKeep();
         } else if (gestureState.dx < -SWIPE_THRESHOLD) {
           handleCrumpleDelete();
+        } else if (Math.abs(gestureState.dx) < 12 && Math.abs(gestureState.dy) < 12) {
+          // User tapped card without swiping -> open Memory Detail UI for current active card
+          if (activeMemory) {
+            useMemoryStore.getState().openMemoryDetail(activeMemory);
+          }
+          resetPosition();
         } else {
           resetPosition();
         }
@@ -77,8 +92,8 @@ export const RediscoverySwipeDeck: React.FC<RediscoverySwipeDeckProps> = ({
       duration: 250,
       useNativeDriver: false,
     }).start(() => {
-      const item = memories[currentIndex];
-      onKeepMemory(item);
+      const item = getCurrentMemory();
+      if (item) onKeepMemory(item);
       position.setValue({ x: 0, y: 0 });
       setCurrentIndex((prev) => prev + 1);
       setReviewedCount((prev) => prev + 1);
@@ -86,7 +101,8 @@ export const RediscoverySwipeDeck: React.FC<RediscoverySwipeDeckProps> = ({
   };
 
   const handleCrumpleDelete = () => {
-    if (isCrumpling || !currentMemory) return;
+    const targetItem = getCurrentMemory();
+    if (isCrumpling || !targetItem) return;
     setIsCrumpling(true);
 
     // 1. Play paper crumple crunch sound & haptics
@@ -121,8 +137,7 @@ export const RediscoverySwipeDeck: React.FC<RediscoverySwipeDeckProps> = ({
         }),
       ]),
     ]).start(() => {
-      const item = memories[currentIndex];
-      onTrashMemory(item);
+      if (targetItem) onTrashMemory(targetItem);
 
       // Increment wads in waste bin
       setWadCount((prev) => prev + 1);

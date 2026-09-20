@@ -47,6 +47,13 @@ interface MemoryStoreState {
   deleteSmartSpace: (id: string) => void;
   openMemoryDetail: (memory: MemoryItem) => void;
   closeMemoryDetail: () => void;
+  fullScreenImageUrl: string | null;
+  openFullScreenImage: (url: string) => void;
+  closeFullScreenImage: () => void;
+  isKnowledgeGraphVisible: boolean;
+  openKnowledgeGraph: () => void;
+  closeKnowledgeGraph: () => void;
+  togglePinMemory: (id: string) => void;
   updateMemoryTags: (id: string, tags: string[]) => void;
   updateMemoryNote: (id: string, note: string) => void;
   updateMemoryDirectory: (id: string, directory: string) => void;
@@ -332,6 +339,26 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
 
   openMemoryDetail: (memory) => set({ selectedMemory: memory, isMemoryDetailVisible: true }),
   closeMemoryDetail: () => set({ isMemoryDetailVisible: false, selectedMemory: null }),
+  fullScreenImageUrl: null,
+  openFullScreenImage: (url) => set({ fullScreenImageUrl: url }),
+  closeFullScreenImage: () => set({ fullScreenImageUrl: null }),
+  isKnowledgeGraphVisible: false,
+  openKnowledgeGraph: () => set({ isKnowledgeGraphVisible: true }),
+  closeKnowledgeGraph: () => set({ isKnowledgeGraphVisible: false }),
+  togglePinMemory: (id: string) => {
+    set((state) => {
+      const updatedMemories = state.memories.map((m) => {
+        if (m.id === id) {
+          const updated = { ...m, isPinned: !m.isPinned };
+          SQLiteDatabaseService.saveMemory(updated);
+          return updated;
+        }
+        return m;
+      });
+      const updatedSelected = state.selectedMemory?.id === id ? { ...state.selectedMemory, isPinned: !state.selectedMemory.isPinned } : state.selectedMemory;
+      return { memories: updatedMemories, selectedMemory: updatedSelected };
+    });
+  },
 
   updateMemoryTags: (id, tags) => {
     set((state) => {
@@ -399,7 +426,7 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   generateConnections: async () => {
     const state = useMemoryStore.getState();
     const { isEligibleForDiscovery, isInvalidConnection } = await import('../services/knowledgeGraph');
-    const eligibleMemories = state.memories.filter((m) => isEligibleForDiscovery(m));
+    const eligibleMemories = state.memories.filter((m) => isEligibleForDiscovery(m, state.memories));
 
     if (eligibleMemories.length < 2 || state.isGeneratingConnections) {
       if (!state.isGeneratingConnections) {
@@ -423,10 +450,13 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
         }
       });
 
-      const { connection, isFallback } = await SerendipityEngine.discoverConnection(
-        eligibleMemories,
-        existingPairKeys
-      );
+      // Minimum 2200ms duration so the user experiences the live WebGL fluid gradient loading screen
+      const [discoveryResult] = await Promise.all([
+        SerendipityEngine.discoverConnection(eligibleMemories, existingPairKeys),
+        new Promise((resolve) => setTimeout(resolve, 2200)),
+      ]);
+
+      const { connection, isFallback } = discoveryResult;
 
       if (connection && !isInvalidConnection(connection, eligibleMemories)) {
         await SQLiteDatabaseService.saveConnection(connection);
@@ -439,13 +469,11 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
           userStats: { ...s.userStats, discoveriesCount: s.userStats.discoveriesCount + 1 },
         }));
 
-        if (isFallback) {
-          useMemoryStore.getState().showToast('Discovered connection via On-Device Knowledge Graph!', 'success', 3000);
-        }
+        useMemoryStore.getState().showToast(`✨ Discovered: ${connection.title}`, 'success', 3500);
       } else {
         set({ isGeneratingConnections: false, isSynapticFusing: false });
         useMemoryStore.getState().showToast(
-          'All high-affinity thought connections discovered! Save new thoughts to unlock more.',
+          '✨ All unique thought connections in your vault discovered! Capture a new thought to unlock more.',
           'success',
           4000
         );

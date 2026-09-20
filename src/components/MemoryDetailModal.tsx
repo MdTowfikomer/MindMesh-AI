@@ -33,12 +33,14 @@ import { useMemoryStore } from '../stores/memoryStore';
 import { SoundEffects } from '../services/soundEffects';
 import { CyberTheme } from '../theme/cyberLuxury';
 import { AddTagModal } from './AddTagModal';
+import { VoiceMemoPlayer } from './VoiceMemoPlayer';
 
 export const MemoryDetailModal: React.FC = () => {
   const {
     selectedMemory,
     isMemoryDetailVisible,
     closeMemoryDetail,
+    openFullScreenImage,
     updateMemoryTags,
     updateMemoryNote,
     updateMemoryDirectory,
@@ -148,7 +150,14 @@ export const MemoryDetailModal: React.FC = () => {
         >
           {/* Main Hero Card Canvas */}
           {selectedMemory.imageUrl ? (
-            <View
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                if (selectedMemory.imageUrl) {
+                  CyberTheme.haptics.light();
+                  openFullScreenImage(selectedMemory.imageUrl);
+                }
+              }}
               style={[
                 styles.heroImageBox,
                 imageRatio
@@ -161,15 +170,22 @@ export const MemoryDetailModal: React.FC = () => {
                 style={styles.heroImage}
                 resizeMode="contain"
               />
-            </View>
+            </TouchableOpacity>
           ) : (
             <View style={styles.heroTextBox}>
+              {selectedMemory.type === 'voice' ? (
+                <VoiceMemoPlayer
+                  mediaUrl={selectedMemory.mediaUrl}
+                  audioUri={selectedMemory.mediaUrl}
+                  duration={selectedMemory.audioDuration}
+                  waveform={selectedMemory.audioWaveform}
+                  title={selectedMemory.title}
+                  content={selectedMemory.content}
+                />
+              ) : null}
               <Text style={styles.heroTextContent}>
                 {selectedMemory.content || selectedMemory.ocrText || selectedMemory.title || 'Note content'}
               </Text>
-              {selectedMemory.type === 'voice' && selectedMemory.audioDuration ? (
-                <Text style={styles.voiceMetaText}>🎙️ {selectedMemory.audioDuration} Voice Memo</Text>
-              ) : null}
             </View>
           )}
 

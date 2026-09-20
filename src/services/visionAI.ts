@@ -57,49 +57,57 @@ IMPORTANT: Return ONLY valid JSON, no markdown, no backticks, no explanation. Ju
         const config = await ByokService.loadConfig();
         const customModel = ByokService.resolveModel(config.model);
         console.log(`[VisionAI] 🚀 Executing direct on-device Gemini call with User BYOK Key (${customModel})`);
-        RemoteLogger.info("🔑 Executing Vision AI request with User's BYOK Gemini API Key", {
-          model: customModel,
-          keyPrefix: config.apiKey ? config.apiKey.slice(0, 8) + '...' : '',
-          imageSizeKb: Math.round(base64.length / 1024),
-        }, 'VisionAI-BYOK');
+        
 
         try {
           const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/${customModel}:generateContent?key=${config.apiKey}`;
-          const directRes = await fetch(directUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    { text: this.PROMPT },
-                    {
-                      inlineData: {
-                        mimeType,
-                        data: base64,
-                      },
-                    },
-                  ],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.2,
-                responseMimeType: 'application/json',
-              },
-            }),
-          });
 
-          if (directRes.ok) {
-            const directJson = await directRes.json();
-            const text = directJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (text) {
-              console.log(`[VisionAI] ✅ Direct BYOK Gemini Success (${customModel})`);
-              RemoteLogger.info("✅ BYOK Gemini Vision analysis completed successfully", { model: customModel }, 'VisionAI-BYOK');
-              return this.parseResponse(text);
+          for (let attempt = 1; attempt <= 2; attempt++) {
+            const directRes = await fetch(directUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  {
+                    parts: [
+                      { text: this.PROMPT },
+                      {
+                        inlineData: {
+                          mimeType,
+                          data: base64,
+                        },
+                      },
+                    ],
+                  },
+                ],
+                generationConfig: {
+                  temperature: 0.2,
+                  responseMimeType: 'application/json',
+                },
+              }),
+            });
+
+            if (directRes.ok) {
+              const directJson = await directRes.json();
+              const text = directJson.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) {
+                console.log(`[VisionAI] ✅ Direct BYOK Gemini Success (${customModel})`);
+                RemoteLogger.info("✅ BYOK Gemini Vision analysis completed successfully", { model: customModel }, 'VisionAI-BYOK');
+                return this.parseResponse(text);
+              }
             }
-          } else {
+
+            if (directRes.status === 503 || directRes.status === 429 || directRes.status >= 500) {
+              if (attempt === 1) {
+                console.warn(`[VisionAI] BYOK direct call returned HTTP ${directRes.status} (Google server overload), retrying in 800ms...`);
+                await new Promise((resolve) => setTimeout(resolve, 800));
+                continue;
+              }
+            }
+
             console.warn(`[VisionAI] BYOK direct call returned HTTP ${directRes.status}, using local fallback`);
             RemoteLogger.warn(`BYOK direct call returned HTTP ${directRes.status}, using local fallback`, { status: directRes.status }, 'VisionAI-BYOK');
+            break;
           }
         } catch (byokErr: any) {
           console.warn('[VisionAI] BYOK direct call error, using local fallback:', byokErr);

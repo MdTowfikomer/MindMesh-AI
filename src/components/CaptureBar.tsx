@@ -197,6 +197,7 @@ export const CaptureBar: React.FC = () => {
           content: `[${transcription.category}] ${transcription.transcription}`,
           audioDuration: `${Math.floor(result.durationSeconds / 60)}:${(result.durationSeconds % 60).toString().padStart(2, '0')}`,
           audioWaveform: [20, 50, 90, 70, 100, 40, 80, 60, 95, 30],
+          mediaUrl: result.uri,
           tags: [...transcription.tags, transcription.category],
           contextSpace: transcription.tags[0] || 'Voice Idea',
         });

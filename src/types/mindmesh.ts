@@ -57,6 +57,7 @@ export interface MemoryItem {
   confidenceScore?: number; // e.g. 94%
   aspectRatio?: number; // e.g. 1.2 for visual card height calculation
   entities?: EntityTag[];
+  isPinned?: boolean;
 }
 
 export interface SmartSpace {

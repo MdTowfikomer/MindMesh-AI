@@ -20,7 +20,7 @@ interface SpaceCollection {
 }
 
 export default function SpacesScreen() {
-  const { memories, savedSmartSpaces, createSmartSpace, deleteSmartSpace, deleteMemory, openSettingsModal } = useMemoryStore();
+  const { memories, savedSmartSpaces, createSmartSpace, deleteSmartSpace, deleteMemory, openSettingsModal, openMemoryDetail } = useMemoryStore();
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState('');
   const [selectedSpace, setSelectedSpace] = useState<SpaceCollection | null>(null);
@@ -166,8 +166,8 @@ export default function SpacesScreen() {
             {selectedSpace.items.map((item) => (
               <View key={item.id} style={styles.detailCard}>
                 <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={() => item.imageUrl ? setFullScreenImage(item.imageUrl) : null}
+                  activeOpacity={0.85}
+                  onPress={() => openMemoryDetail(item)}
                 >
                   {item.imageUrl ? (
                     <Image source={{ uri: item.imageUrl }} style={styles.detailCardImage} resizeMode="cover" />

@@ -17,7 +17,19 @@ import { MemoryDetailModal } from '../../src/components/MemoryDetailModal';
 import { SavingSkeletonCard } from '../../src/components/SavingSkeletonCard';
 import { SpotlightCommandPalette } from '../../src/components/SpotlightCommandPalette';
 import { CyberTheme } from '../../src/theme/cyberLuxury';
-import { Search, Sparkles, CheckCircle2, AlertCircle, Settings } from '../../src/components/Icons';
+import {
+  Search,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  Settings,
+  LayoutGrid,
+  ImageIcon,
+  FileText,
+  Share2,
+  Play,
+  Mic,
+} from '../../src/components/Icons';
 import { SettingsModal } from '../../src/components/SettingsModal';
 import { ByokPromptModal } from '../../src/components/ByokPromptModal';
 import { RemoteLogger } from '../../src/services/logger';
@@ -56,7 +68,10 @@ export default function FeedScreen() {
     toastMessage,
     toastType,
     showToast,
+    openKnowledgeGraph,
   } = useMemoryStore();
+
+  const [typeFilter, setTypeFilter] = useState<'all' | 'image' | 'text' | 'bookmark' | 'video' | 'voice'>('all');
 
   // Listen for native Android inbound share intents from external apps (Screenshots, Gallery, Instagram, Twitter/X)
   useEffect(() => {
@@ -165,8 +180,15 @@ export default function FeedScreen() {
           m.tags.some((t) => t.toLowerCase() === activeContextSpace.toLowerCase())
       );
     }
+    if (typeFilter !== 'all') {
+      if (typeFilter === 'image') base = base.filter((m) => m.type === 'image' || m.imageUrl);
+      else if (typeFilter === 'text') base = base.filter((m) => m.type === 'text' || m.type === 'quote' || m.type === 'article');
+      else if (typeFilter === 'bookmark') base = base.filter((m) => m.type === 'bookmark' || m.urlMetadata);
+      else if (typeFilter === 'video') base = base.filter((m) => m.type === 'video');
+      else if (typeFilter === 'voice') base = base.filter((m) => m.type === 'voice');
+    }
     return AdvancedSearchService.filterMemories(base, searchQuery);
-  }, [memories, activeContextSpace, searchQuery]);
+  }, [memories, activeContextSpace, searchQuery, typeFilter]);
 
   // Dual-column masonry layout
   const leftColumn = useMemo(() => filteredMemories.filter((_, idx) => idx % 2 === 0), [filteredMemories]);
@@ -192,16 +214,31 @@ export default function FeedScreen() {
       {/* Clean Screen Title & Settings Header */}
       <View style={styles.headerTitleRow}>
         <Text style={styles.screenTitle}>Memory Feed</Text>
-        <TouchableOpacity
-          style={styles.settingsHeaderBtn}
-          activeOpacity={0.75}
-          onPress={() => {
-            CyberTheme.haptics.light();
-            openSettingsModal();
-          }}
-        >
-          <Settings size={18} color="#94A3B8" />
-        </TouchableOpacity>
+
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity
+            style={styles.graphHeaderBtn}
+            activeOpacity={0.75}
+            onPress={() => {
+              CyberTheme.haptics.light();
+              openKnowledgeGraph();
+            }}
+          >
+            <Sparkles size={14} color="#94A3B8" />
+            <Text style={styles.graphHeaderBtnText}>Graph</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.settingsHeaderBtn}
+            activeOpacity={0.75}
+            onPress={() => {
+              CyberTheme.haptics.light();
+              openSettingsModal();
+            }}
+          >
+            <Settings size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* 21st.dev Style Spotlight Search Bar Trigger */}
@@ -222,6 +259,43 @@ export default function FeedScreen() {
             <Sparkles size={12} color="#94A3B8" />
           </View>
         </TouchableOpacity>
+      </View>
+
+      {/* Quick Content Type Filter Bar */}
+      <View style={styles.typeFilterSection}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.typeFilterScroll}
+        >
+          {[
+            { id: 'all', label: 'All', icon: LayoutGrid },
+            { id: 'image', label: 'Photos', icon: ImageIcon },
+            { id: 'text', label: 'Notes', icon: FileText },
+            { id: 'bookmark', label: 'Links', icon: Share2 },
+            { id: 'video', label: 'Videos', icon: Play },
+            { id: 'voice', label: 'Voice', icon: Mic },
+          ].map((item) => {
+            const isSelected = typeFilter === item.id;
+            const IconComp = item.icon;
+            return (
+              <TouchableOpacity
+                key={item.id}
+                style={[styles.typePill, isSelected && styles.typePillActive]}
+                onPress={() => {
+                  CyberTheme.haptics.light();
+                  setTypeFilter(item.id as any);
+                }}
+                activeOpacity={0.8}
+              >
+                <IconComp size={12} color={isSelected ? '#101114' : '#94A3B8'} />
+                <Text style={[styles.typePillText, isSelected && styles.typePillTextActive]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Stacks & Smart Spaces — visible when active query exists */}
@@ -370,6 +444,27 @@ const styles = StyleSheet.create({
     color: '#F8FAFC',
     letterSpacing: -0.3,
   },
+  headerRightActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  graphHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+  graphHeaderBtnText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#CBD5E1',
+  },
   settingsHeaderBtn: {
     width: 36,
     height: 36,
@@ -379,6 +474,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  typeFilterSection: {
+    marginBottom: 8,
+  },
+  typeFilterScroll: {
+    paddingHorizontal: 12,
+    gap: 6,
+  },
+  typePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderColor: 'rgba(255, 255, 255, 0.06)',
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  typePillActive: {
+    backgroundColor: '#F8FAFC',
+    borderColor: '#F8FAFC',
+  },
+  typePillText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#94A3B8',
+  },
+  typePillTextActive: {
+    color: '#0F1015',
+    fontWeight: '700',
   },
   toastBanner: {
     position: 'absolute',

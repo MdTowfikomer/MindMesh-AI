@@ -19,12 +19,15 @@ import {
   CheckCircle2,
   Key,
   X,
+  Share2,
 } from '../../src/components/Icons';
+import { MarkdownExporterService } from '../../src/services/markdownExporter';
 
 import {
   isEligibleForDiscovery,
   isInvalidConnection,
 } from '../../src/services/knowledgeGraph';
+
 
 export default function DiscoverScreen() {
   const {
@@ -38,6 +41,7 @@ export default function DiscoverScreen() {
     dismissByokNudge,
     openByokPrompt,
     byokConfig,
+    openMemoryDetail,
   } = useMemoryStore();
 
   const eligibleMemories = memories.filter((m) => isEligibleForDiscovery(m));
@@ -62,11 +66,17 @@ export default function DiscoverScreen() {
         <TouchableOpacity
           style={[
             styles.triggerCta,
-            (isGeneratingConnections || userMemoriesCount < 2) && styles.triggerCtaDisabled,
+            isGeneratingConnections && styles.triggerCtaDisabled,
           ]}
-          onPress={generateConnections}
-          disabled={isGeneratingConnections || userMemoriesCount < 2}
-          activeOpacity={0.88}
+          onPress={() => {
+            if (userMemoriesCount < 2 && memories.length < 2) {
+              useMemoryStore.getState().showToast('Save 2+ thoughts with notes to discover connections!', 'error', 3500);
+              return;
+            }
+            generateConnections();
+          }}
+          disabled={isGeneratingConnections}
+          activeOpacity={0.85}
         >
           <View style={styles.ctaIconBadge}>
             {isGeneratingConnections ? (
@@ -79,9 +89,7 @@ export default function DiscoverScreen() {
             <Text style={styles.ctaTitle}>
               {isGeneratingConnections
                 ? 'Synthesizing Graph Connections...'
-                : userMemoriesCount < 2
-                  ? 'Save 2+ memories to discover'
-                  : 'Discover New Connections'}
+                : 'Discover New Connections'}
             </Text>
             <Text style={styles.ctaSub}>
               {isGeneratingConnections
@@ -91,6 +99,7 @@ export default function DiscoverScreen() {
           </View>
           <ChevronRight size={16} color="#64748B" />
         </TouchableOpacity>
+
       </View>
 
       <ScrollView
@@ -180,27 +189,35 @@ export default function DiscoverScreen() {
 
                     <View style={styles.bridgeRow}>
                       {sourceMem && (
-                        <View style={styles.bridgeCard}>
+                        <TouchableOpacity
+                          style={styles.bridgeCard}
+                          onPress={() => openMemoryDetail(sourceMem)}
+                          activeOpacity={0.8}
+                        >
                           {sourceMem.imageUrl && (
                             <Image source={{ uri: sourceMem.imageUrl }} style={styles.bridgeImage} />
                           )}
                           <Text style={styles.bridgeCardTitle} numberOfLines={2}>
                             {sourceMem.title}
                           </Text>
-                        </View>
+                        </TouchableOpacity>
                       )}
 
                       <Text style={styles.bridgeConnector}>+</Text>
 
                       {targetMem && (
-                        <View style={styles.bridgeCard}>
+                        <TouchableOpacity
+                          style={styles.bridgeCard}
+                          onPress={() => openMemoryDetail(targetMem)}
+                          activeOpacity={0.8}
+                        >
                           {targetMem.imageUrl && (
                             <Image source={{ uri: targetMem.imageUrl }} style={styles.bridgeImage} />
                           )}
                           <Text style={styles.bridgeCardTitle} numberOfLines={2}>
                             {targetMem.title}
                           </Text>
-                        </View>
+                        </TouchableOpacity>
                       )}
                     </View>
                   </View>
@@ -245,9 +262,30 @@ export default function DiscoverScreen() {
                     })}
                   </View>
                 )}
+
+
+                {/* Export Markdown (.md) Button */}
+                <TouchableOpacity
+                  style={styles.exportMdBtn}
+                  onPress={async () => {
+                    const success = await MarkdownExporterService.exportConnectionAsMarkdown(
+                      conn,
+                      sourceMem,
+                      targetMem
+                    );
+                    if (success) {
+                      useMemoryStore.getState().showToast('Exported Markdown note to device!', 'success');
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Share2 size={14} color="#CBD5E1" />
+                  <Text style={styles.exportMdBtnText}>Export Markdown (.md)</Text>
+                </TouchableOpacity>
               </View>
             );
           })
+
         )}
       </ScrollView>
     </SafeAreaView>
@@ -563,4 +601,23 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: '#64748B',
   },
+  exportMdBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  exportMdBtnText: {
+    color: '#CBD5E1',
+    fontSize: 12,
+    fontWeight: '500',
+  },
 });
+

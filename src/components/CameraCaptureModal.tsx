@@ -56,8 +56,11 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
     let isMounted = true;
     const fetchRecentPhotos = async () => {
       try {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status === 'granted') {
+        let perm = await MediaLibrary.getPermissionsAsync(false, ['photo']);
+        if (!perm.granted && perm.canAskAgain) {
+          perm = await MediaLibrary.requestPermissionsAsync(false, ['photo']);
+        }
+        if (perm.granted) {
           const res = await MediaLibrary.getAssetsAsync({
             first: 20,
             mediaType: ['photo'],
@@ -67,10 +70,12 @@ export const CameraCaptureModal: React.FC<CameraCaptureModalProps> = ({
             setRecentAssets(res.assets);
           }
         }
-      } catch (err) {
-        console.warn('[CameraCaptureModal] Failed to fetch gallery thumbnails:', err);
+      } catch (err: any) {
+        // Handled gracefully: In Expo Go on newer Android versions, scoped storage may limit direct asset listing
+        console.log('[CameraCaptureModal] Note: Recent thumbnails skipped in this environment');
       }
     };
+
 
     fetchRecentPhotos();
     return () => {

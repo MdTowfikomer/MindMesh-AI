@@ -16,10 +16,10 @@ export interface ModelPreset {
 }
 
 export const GEMINI_MODEL_PRESETS: ModelPreset[] = [
-  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', description: 'Recommended • Fast, smart & multimodal agentic reasoning', isDefault: true },
+  { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash', description: 'Active Standard • Fast, smart & multimodal vision', isDefault: true },
   { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite', description: 'Ultra-low latency & cost-efficient parsing' },
-  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Balanced price-performance for high volume' },
-  { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite', description: 'Lightweight rapid tag synthesis' },
+  { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash', description: 'High performance multimodal reasoning' },
+  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Previous generation workhorse' },
 ];
 
 const STORAGE_KEY = 'byok_gemini_config';
@@ -29,12 +29,12 @@ export class ByokService {
 
   /**
    * Resolves model names to active Google AI Studio endpoints.
-   * Gracefully redirects deprecated/shut-down models (e.g. 1.5-flash, 2.0-flash) to active 3.5-flash.
+   * Redirects deprecated 1.5 models to active 3.5-flash.
    */
   public static resolveModel(modelName?: string | null): string {
     if (!modelName) return 'gemini-3.5-flash';
     const trimmed = modelName.trim();
-    if (trimmed.startsWith('gemini-1.5') || trimmed.startsWith('gemini-2.0')) {
+    if (trimmed.startsWith('gemini-1.5')) {
       return 'gemini-3.5-flash';
     }
     return trimmed;
@@ -140,6 +140,7 @@ export class ByokService {
 
   /**
    * Executes a direct on-device Gemini API request with custom credentials
+   * Includes automatic retry for transient 503 / 429 Google server overloads
    */
   public static async executeGemini(
     contents: any[],
@@ -155,23 +156,35 @@ export class ByokService {
     try {
       const model = this.resolveModel(config.model);
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${config.apiKey}`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            maxOutputTokens: options.maxOutputTokens || 2048,
-            temperature: options.temperature ?? 0.2,
-            ...(options.responseMimeType ? { responseMimeType: options.responseMimeType } : {}),
-          },
-        }),
-      });
 
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return text;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents,
+            generationConfig: {
+              maxOutputTokens: options.maxOutputTokens || 2048,
+              temperature: options.temperature ?? 0.2,
+              ...(options.responseMimeType ? { responseMimeType: options.responseMimeType } : {}),
+            },
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) return text;
+        }
+
+        if (res.status === 503 || res.status === 429 || res.status >= 500) {
+          if (attempt === 1) {
+            console.warn(`[ByokService] HTTP ${res.status} Google server overload on attempt 1, retrying in 800ms...`);
+            await new Promise((resolve) => setTimeout(resolve, 800));
+            continue;
+          }
+        }
+        break;
       }
     } catch (e) {
       console.warn('[ByokService] Direct execution error:', e);

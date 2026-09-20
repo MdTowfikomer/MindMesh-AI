@@ -60,9 +60,10 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
             {memory.content || memory.ocrText || 'Recorded thought'}
           </Text>
           <Text style={styles.quoteMarkBottom}>”</Text>
-          {memory.audioDuration && (
-            <Text style={styles.quoteAuthor}>🎙️ {memory.audioDuration} Voice Memo</Text>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <Mic size={12} color="#38BDF8" />
+            <Text style={styles.quoteAuthor}>{memory.audioDuration || '0:15'} Voice Memo</Text>
+          </View>
         </View>
         <Text style={styles.captionTitle} numberOfLines={2}>
           {memory.title || 'Voice Thought'}

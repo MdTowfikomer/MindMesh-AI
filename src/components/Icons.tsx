@@ -27,6 +27,10 @@ export const Mic: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) =
   <Feather name="mic" size={size} color={color} style={style} />
 );
 
+export const Volume2: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="volume-2" size={size} color={color} style={style} />
+);
+
 export const ImageIcon: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
   <Feather name="image" size={size} color={color} style={style} />
 );
@@ -253,5 +257,17 @@ export const MagicWand: React.FC<IconProps> = ({ size = 18, color = '#FFF', styl
 
 export const PhotoLibrary: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
   <Ionicons name="images-outline" size={size} color={color} style={style} />
+);
+
+export const Pause: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="pause" size={size} color={color} style={style} />
+);
+
+export const ZoomIn: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="zoom-in" size={size} color={color} style={style} />
+);
+
+export const ZoomOut: React.FC<IconProps> = ({ size = 18, color = '#FFF', style }) => (
+  <Feather name="zoom-out" size={size} color={color} style={style} />
 );
 

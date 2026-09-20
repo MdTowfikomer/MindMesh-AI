@@ -4,13 +4,10 @@ import {
   Text,
   StyleSheet,
   Animated,
-  Dimensions,
   ActivityIndicator,
-  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { FluidFieldBackground } from './FluidFieldBackground';
 
 interface SynapticFusionProps {
   isVisible: boolean;
@@ -19,56 +16,18 @@ interface SynapticFusionProps {
 
 export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const auraScaleAnim = useRef(new Animated.Value(1)).current;
-  const auraRotateAnim = useRef(new Animated.Value(0)).current;
-  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (isVisible) {
-      // Fade in
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 400,
+        duration: 350,
         useNativeDriver: true,
       }).start();
-
-      // Flowing swirl & breathing pulse loop
-      pulseLoopRef.current = Animated.loop(
-        Animated.parallel([
-          Animated.sequence([
-            Animated.timing(auraScaleAnim, {
-              toValue: 1.12,
-              duration: 2200,
-              useNativeDriver: true,
-            }),
-            Animated.timing(auraScaleAnim, {
-              toValue: 1,
-              duration: 2200,
-              useNativeDriver: true,
-            }),
-          ]),
-          Animated.sequence([
-            Animated.timing(auraRotateAnim, {
-              toValue: 1,
-              duration: 4400,
-              useNativeDriver: true,
-            }),
-            Animated.timing(auraRotateAnim, {
-              toValue: 0,
-              duration: 4400,
-              useNativeDriver: true,
-            }),
-          ]),
-        ])
-      );
-      pulseLoopRef.current.start();
     } else {
-      if (pulseLoopRef.current) {
-        pulseLoopRef.current.stop();
-      }
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 350,
+        duration: 300,
         useNativeDriver: true,
       }).start();
     }
@@ -76,46 +35,21 @@ export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => 
 
   if (!isVisible) return null;
 
-  const rotateInterpolation = auraRotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['-5deg', '5deg'],
-  });
-
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/* 1. Base Gradient Canvas (Black Current #12142E to Clear Hanada #4C3894) */}
+      {/* 1. Live WebGL Fluid Field Shader Background */}
+      <FluidFieldBackground style={StyleSheet.absoluteFill} />
+
+      {/* 2. Dark Vignette for Text Legibility & Depth */}
       <LinearGradient
-        colors={['#090A14', '#12142E', '#251E4E', '#4C3894', '#6D5BB5']}
-        locations={[0, 0.35, 0.6, 0.85, 1.0]}
-        start={{ x: 0.5, y: 0.0 }}
-        end={{ x: 0.5, y: 1.0 }}
+        colors={['rgba(3, 3, 6, 0.6)', 'transparent', 'rgba(3, 3, 6, 0.8)']}
+        locations={[0, 0.5, 1.0]}
         style={StyleSheet.absoluteFill as any}
+        pointerEvents="none"
       />
 
-      {/* 2. High-Res Flow Swirl Image Texture */}
-      <Animated.Image
-        source={require('../../assets/feralui_flow_gradient.png')}
-        style={[
-          styles.flowImageOverlay,
-          {
-            transform: [
-              { scale: auraScaleAnim },
-              { rotate: rotateInterpolation },
-            ],
-          },
-        ]}
-        resizeMode="cover"
-      />
-
-      {/* 3. Subtle Dark Vignette for Text Legibility */}
-      <LinearGradient
-        colors={['rgba(9, 10, 20, 0.75)', 'transparent', 'rgba(18, 20, 46, 0.4)']}
-        locations={[0, 0.45, 1.0]}
-        style={StyleSheet.absoluteFill as any}
-      />
-
-      {/* 4. Serendipity Discovery Content */}
-      <View style={styles.contentWrapper}>
+      {/* 3. Serendipity Discovery Content */}
+      <View style={styles.contentWrapper} pointerEvents="none">
         <Text style={styles.tagHeader}>SYNTHESIZING MEMORIES</Text>
 
         <Text style={styles.heroHeadline}>
@@ -128,7 +62,7 @@ export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => 
 
         {/* Translucent Frosted Loading Capsule */}
         <View style={styles.loadingPill}>
-          <ActivityIndicator size="small" color="#FFFFFF" />
+          <ActivityIndicator size="small" color="#00E5FF" />
           <Text style={styles.loadingPillText}>DISCOVERING CONNECTIONS...</Text>
         </View>
       </View>
@@ -138,18 +72,13 @@ export const SynapticFusion: React.FC<SynapticFusionProps> = ({ isVisible }) => 
 
 const styles = StyleSheet.create({
   container: {
-    ...(StyleSheet.absoluteFill as any),
+    ...StyleSheet.absoluteFill,
     zIndex: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#090A14',
+    backgroundColor: '#030306',
   },
-  flowImageOverlay: {
-    position: 'absolute',
-    width: SCREEN_WIDTH * 1.3,
-    height: SCREEN_HEIGHT * 1.1,
-    opacity: 0.85,
-  },
+
   contentWrapper: {
     paddingHorizontal: 28,
     alignItems: 'center',

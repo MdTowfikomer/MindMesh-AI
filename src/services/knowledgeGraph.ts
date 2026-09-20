@@ -22,21 +22,16 @@ const STOP_WORDS = new Set([
   'hour', 'hours', 'minute', 'minutes', 'min', 'sec', 'time', 'date', 'year', 'day', 'today', 'yesterday',
 ]);
 
-export const SEED_MEMORY_IDS = new Set([
-  'mem-shipathon-official',
-  'mem-paywall-inspo',
-  'mem-voice-shipathon',
-  'mem-quote-pg',
-  'mem-synaptic-arch',
-  'mem-article-1',
-  'mem-video-1',
-  'mem-linkedin',
+export const DUMMY_PLACEHOLDER_IDS = new Set([
   'mem-1',
   'mem-2',
   'mem-4',
   'mem-6',
   'mem-quote-1',
 ]);
+
+// Keep backward compatibility export
+export const SEED_MEMORY_IDS = DUMMY_PLACEHOLDER_IDS;
 
 const GENERIC_TAGS = new Set([
   'image', 'images', 'photo', 'photos', 'screenshot', 'screenshots',
@@ -67,35 +62,35 @@ export function isNonGeneratedTitle(title?: string | null): boolean {
 
 /**
  * Determines whether a memory is eligible for Discovery cross-pollination.
- * Excludes seed memories and raw un-analyzed placeholders with non-generated titles.
+ * Strictly excludes raw un-analyzed placeholders with non-generated titles and dummy seeding images.
  */
-export function isEligibleForDiscovery(memory: MemoryItem): boolean {
-  // Exclude seed memories and sample content
-  if (SEED_MEMORY_IDS.has(memory.id) || memory.id.startsWith('mem-seed-') || memory.id.startsWith('seed-')) {
-    return false;
-  }
+export function isEligibleForDiscovery(memory: MemoryItem, _allMemories: MemoryItem[] = []): boolean {
   // Exclude deleted memories
   if (memory.deletedAt) {
     return false;
   }
+  // Exclude dummy placeholder memories with low-quality dummy screenshots
+  if (DUMMY_PLACEHOLDER_IDS.has(memory.id) || memory.id.startsWith('seed-dummy-')) {
+    return false;
+  }
   // Exclude memories with non-generated raw placeholder titles (like "Saved 22 Aug at 04:13")
-  // unless the memory has real, substantive user/OCR text (>40 chars)
   if (isNonGeneratedTitle(memory.title)) {
     const hasSubstantialContent =
-      (memory.content && memory.content.trim().length > 40) ||
-      (memory.ocrText && memory.ocrText.trim().length > 40);
+      (memory.content && memory.content.trim().length > 30) ||
+      (memory.ocrText && memory.ocrText.trim().length > 30);
     if (!hasSubstantialContent) {
       return false;
     }
   }
+
   return true;
 }
 
 /**
- * Validates whether a connection is valid or if it was built from non-generated titles or seed memories
+ * Validates whether a connection is valid or if it was built from non-generated titles or dummy seeding content
  */
 export function isInvalidConnection(conn: SerendipityConnection, memories: MemoryItem[] = []): boolean {
-  // Check connection ID or seed connection
+  // Check dummy sample connection
   if (conn.id === 'conn-1' || conn.id.startsWith('conn-seed-')) {
     return true;
   }
@@ -105,8 +100,8 @@ export function isInvalidConnection(conn: SerendipityConnection, memories: Memor
       return true;
     }
   }
-  // Check source and target IDs against seed IDs
-  if (SEED_MEMORY_IDS.has(conn.sourceMemoryId) || SEED_MEMORY_IDS.has(conn.targetMemoryId)) {
+  // Check source and target IDs against dummy placeholder IDs
+  if (DUMMY_PLACEHOLDER_IDS.has(conn.sourceMemoryId) || DUMMY_PLACEHOLDER_IDS.has(conn.targetMemoryId)) {
     return true;
   }
   // Check against memory items if available
@@ -366,16 +361,16 @@ export class KnowledgeGraphEngine {
 
         const scored = this.evaluatePair(memA, memB);
 
-        // Quality Gate: require non-trivial score and actual semantic evidence
-        // (Must have real shared specific tags, shared entities, or at least 2 non-stopword matched keywords)
         const hasSubstantiveEvidence =
           scored.evidence.sharedTags.length > 0 ||
           scored.evidence.sharedEntities.length > 0 ||
-          scored.evidence.matchedKeywords.length >= 2;
+          scored.evidence.matchedKeywords.length >= 1 ||
+          scored.score >= 0.15;
 
-        if (scored.score >= 0.20 && hasSubstantiveEvidence) {
+        if (hasSubstantiveEvidence) {
           scoredPairs.push(scored);
         }
+
       }
     }
 
