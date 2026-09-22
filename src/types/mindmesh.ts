@@ -135,3 +135,9 @@ export interface UserStats {
   shippedProjectsCount: number;
   isPro: boolean;
 }
+
+export interface NodePosition {
+  x: number;
+  y: number;
+}
+
