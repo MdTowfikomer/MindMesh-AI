@@ -112,7 +112,7 @@ export default function DiscoverScreen() {
           <View style={styles.byokBanner}>
             <View style={styles.byokBannerHeader}>
               <View style={styles.byokBadgeRow}>
-                <Sparkles size={14} color="#38BDF8" />
+                <Sparkles size={14} color="#B8334F" />
                 <Text style={styles.byokBadgeText}>Deterministic Knowledge Graph</Text>
               </View>
               <TouchableOpacity
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   byokBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#38BDF8',
+    color: '#B8334F',
     letterSpacing: 0.2,
   },
   byokBannerTitle: {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#8B1A2B',
     borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
   byokBannerBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#0F172A',
+    color: '#F8FAFC',
   },
   scrollContent: {
     flex: 1,
@@ -563,7 +563,7 @@ const styles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#B8334F',
     marginTop: 6,
   },
   evidenceText: {

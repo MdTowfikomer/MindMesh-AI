@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
   },
   backBtnText: {
     fontSize: 14,
-    color: '#38BDF8',
+    color: '#B8334F',
     fontWeight: '600',
   },
   deleteDirectoryBtn: {
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
     lineHeight: 17,
   },
   createBtn: {
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#8B1A2B',
     paddingVertical: 13,
     borderRadius: 12,
     alignItems: 'center',
