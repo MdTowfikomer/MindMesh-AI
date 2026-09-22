@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { RevenueCatService } from '../src/services/revenuecat';
 
 export default function RootLayout() {
+  useEffect(() => {
+    RevenueCatService.configure();
+  }, []);
+
   return (
     <Stack
       screenOptions={{

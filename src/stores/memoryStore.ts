@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { MemoryItem, SerendipityConnection, BuildPlan, UserStats, SmartSpace } from '../types/mindmesh';
+import { MemoryItem, SerendipityConnection, BuildPlan, UserStats, SmartSpace, NodePosition } from '../types/mindmesh';
 import { seedMemories, seedBuildPlan } from '../data/seedMemories';
 import { SerendipityEngine } from '../services/serendipityEngine';
 import { SQLiteDatabaseService } from '../services/sqliteDatabase';
@@ -87,8 +87,11 @@ interface MemoryStoreState {
   toastMessage: string | null;
   toastType: 'success' | 'error' | null;
   showToast: (message: string, type?: 'success' | 'error', durationMs?: number) => void;
-  hideToast: () => void;
+  graphNodePositions: Record<string, NodePosition>;
+  updateGraphNodePosition: (id: string, pos: NodePosition) => void;
+  resetGraphNodePositions: () => void;
 }
+
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -130,6 +133,16 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   },
   setByokConfig: (config) => set({ byokConfig: config }),
 
+  graphNodePositions: {},
+  updateGraphNodePosition: (id, pos) =>
+    set((state) => ({
+      graphNodePositions: {
+        ...state.graphNodePositions,
+        [id]: pos,
+      },
+    })),
+  resetGraphNodePositions: () => set({ graphNodePositions: {} }),
+
   showToast: (message: string, type: 'success' | 'error' = 'success', durationMs = 3500) => {
     if (toastTimer) clearTimeout(toastTimer);
     set({ toastMessage: message, toastType: type });
@@ -154,6 +167,12 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
       const byok = await ByokService.loadConfig();
       set({ byokConfig: byok });
 
+      // Hydrate onboarding state from SQLite
+      const onboardingDone = await SQLiteDatabaseService.getSetting('onboarding_completed');
+      if (onboardingDone === 'true') {
+        set({ isOnboardingCompleted: true });
+      }
+
       // Purge obsolete legacy seed memories from previous builds
       const LEGACY_SEED_IDS = [
         'mem-article-1',
@@ -165,6 +184,10 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
         'mem-6',
         'mem-quote-1',
         'mem-synaptic-arch',
+        'mem-shipathon-official',
+        'mem-paywall-inspo',
+        'mem-voice-shipathon',
+        'mem-quote-pg',
       ];
       for (const legacyId of LEGACY_SEED_IDS) {
         await SQLiteDatabaseService.deleteMemory(legacyId);
@@ -408,7 +431,10 @@ export const useMemoryStore = create<MemoryStoreState>((set) => ({
   setActiveContextSpace: (space) => set({ activeContextSpace: space }),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setIsRecordingVoice: (recording) => set({ isRecordingVoice: recording }),
-  completeOnboarding: () => set({ isOnboardingCompleted: true }),
+  completeOnboarding: () => {
+    set({ isOnboardingCompleted: true });
+    SQLiteDatabaseService.saveSetting('onboarding_completed', 'true');
+  },
   openPaywall: () => set({ isPaywallVisible: true }),
   closePaywall: () => set({ isPaywallVisible: false }),
   openShareSheet: () => set({ isShareSheetVisible: true }),

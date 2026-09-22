@@ -267,10 +267,6 @@ export const CaptureBar: React.FC = () => {
               >
                 <Text style={styles.placeholderText}>Dump a thought, idea, or link...</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity style={styles.iconButton} onPress={handlePickPdf}>
-                <FileText size={17} color="#94A3B8" />
-              </TouchableOpacity>
             </View>
           )}
         </BlurView>

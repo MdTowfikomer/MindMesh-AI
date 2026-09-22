@@ -22,14 +22,13 @@ export default function OnboardingScreen() {
   const handleCaptureImage = () => {
     setHasImage(true);
     addMemory({
-      type: 'pricing',
-      title: 'RevenueCat Storytelling Paywall Screenshot',
-      content: 'Multi-page storytelling paywall flow captured during cold-start onboarding.',
-      imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80',
-      ocrText: 'REVENUECAT STORYTELLING PAYWALL: 3-Page Narrative Flow',
-      tags: ['Pricing', 'RevenueCat', 'ColdStart'],
-      contextSpace: 'Shipaton',
-      confidenceScore: 0.96,
+      type: 'image',
+      title: 'Whiteboard: Weekly Goals & Priorities',
+      content: 'Captured photo of this week\'s priority board. Focus areas: ship MVP, write blog post, and review user feedback.',
+      imageUrl: 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=800&q=80',
+      tags: ['Productivity', 'Planning', 'Goals'],
+      contextSpace: 'Productivity',
+      confidenceScore: 0.93,
     });
     setStep(2);
   };
@@ -37,12 +36,12 @@ export default function OnboardingScreen() {
   const handleCaptureNote = () => {
     setHasNote(true);
     addMemory({
-      type: 'text',
-      title: 'White Minimalist & Luxury Editorial Design Spec',
-      content: 'White minimalist canvas (#FFFFFF) with Cormorant Garamond serif headings and mymind visual cards.',
-      tags: ['Design', 'SwissMinimalism', 'Typography'],
-      contextSpace: 'MobileUX',
-      confidenceScore: 0.92,
+      type: 'quote',
+      title: 'James Clear on Identity Change',
+      content: 'Every action you take is a vote for the type of person you wish to become.',
+      tags: ['Habits', 'Mindset', 'Self-Improvement'],
+      contextSpace: 'Ideas',
+      confidenceScore: 0.95,
     });
     setStep(3);
   };
@@ -51,12 +50,12 @@ export default function OnboardingScreen() {
     setHasVoice(true);
     addMemory({
       type: 'voice',
-      title: 'Synaptic Fusion & Build Plan Idea',
-      content: 'What if captured notes physically converge into executable PRDs & RevenueCat paywall strategies?',
-      audioDuration: '0:35',
-      audioWaveform: [30, 60, 90, 40, 70, 100, 50, 80],
-      tags: ['Idea', 'VoiceMemo', 'SynapticFusion'],
-      contextSpace: 'Shipaton',
+      title: 'Morning Idea: App That Connects Your Notes',
+      content: 'What if there was an app that automatically finds connections between all the random things I save — tweets, screenshots, voice memos?',
+      audioDuration: '0:22',
+      audioWaveform: [25, 55, 85, 45, 70, 95, 35, 80, 60, 90],
+      tags: ['Ideas', 'Product', 'Startup'],
+      contextSpace: 'Ideas',
       confidenceScore: 0.94,
     });
     setStep(4);
@@ -116,9 +115,9 @@ export default function OnboardingScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.heroHeader}>60-Second Cold-Start Magic</Text>
+        <Text style={styles.heroHeader}>Your Second Brain in 60 Seconds</Text>
         <Text style={styles.heroSub}>
-          Drop 3 thoughts. Watch MindMesh discover what connects them in under 60 seconds.
+          Drop 3 thoughts. Watch MindMesh discover what connects them.
         </Text>
 
         {/* 3 Step Cards */}
@@ -132,9 +131,9 @@ export default function OnboardingScreen() {
           </View>
 
           <View style={styles.stepTextCol}>
-            <Text style={styles.stepTitle}>1. Drop 1 Screenshot / Image</Text>
+            <Text style={styles.stepTitle}>1. Save a Photo or Screenshot</Text>
             <Text style={styles.stepDesc}>
-              {hasImage ? 'Pricing Screenshot Classified & OCR Processed' : 'Tap to simulate dropping a pricing screenshot'}
+              {hasImage ? 'Photo saved and auto-tagged' : 'Tap to capture a whiteboard or screenshot'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -149,9 +148,9 @@ export default function OnboardingScreen() {
           </View>
 
           <View style={styles.stepTextCol}>
-            <Text style={styles.stepTitle}>2. Write 1 Quick Thought</Text>
+            <Text style={styles.stepTitle}>2. Save a Quote or Idea</Text>
             <Text style={styles.stepDesc}>
-              {hasNote ? 'Thought Parsed & Auto-Tagged' : 'Tap to drop a design requirement note'}
+              {hasNote ? 'Quote captured and tagged' : 'Tap to save an inspiring quote'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -166,9 +165,9 @@ export default function OnboardingScreen() {
           </View>
 
           <View style={styles.stepTextCol}>
-            <Text style={styles.stepTitle}>3. Record 1 Voice Memo</Text>
+            <Text style={styles.stepTitle}>3. Record a Voice Memo</Text>
             <Text style={styles.stepDesc}>
-              {hasVoice ? 'Audio Transcribed into Action Items' : 'Tap to record a 10s audio blurb'}
+              {hasVoice ? 'Voice transcribed and connected' : 'Tap to record a quick idea'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -176,9 +175,9 @@ export default function OnboardingScreen() {
         {/* Finish CTA */}
         {hasVoice && (
           <View style={styles.successBox}>
-            <Text style={styles.successTitle}>Synaptic Connection Discovered!</Text>
+            <Text style={styles.successTitle}>Connection Discovered!</Text>
             <Text style={styles.successSub}>
-              MindMesh connected your pricing screenshot with your voice note (96% Match) and prepared your first Build Plan.
+              MindMesh found a link between your voice idea and the saved quote — your first knowledge connection is ready to explore.
             </Text>
 
             <TouchableOpacity style={styles.finishButton} onPress={handleFinishOnboarding}>
