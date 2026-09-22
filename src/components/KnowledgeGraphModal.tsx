@@ -552,8 +552,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   multiSelectBtnActive: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#F8FAFC',
+    backgroundColor: '#8B1A2B',
+    borderColor: '#8B1A2B',
   },
   multiSelectBtnText: {
     fontSize: 10,
@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   multiSelectBtnTextActive: {
-    color: '#101114',
+    color: '#F8FAFC',
     fontWeight: '700',
   },
   closeBtn: {
@@ -586,15 +586,15 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   filterChipActive: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#F8FAFC',
+    backgroundColor: '#8B1A2B',
+    borderColor: '#8B1A2B',
   },
   filterChipText: {
     fontSize: 11,
     color: '#94A3B8',
   },
   filterChipTextActive: {
-    color: '#101114',
+    color: '#F8FAFC',
     fontWeight: '600',
   },
   canvasWrapper: {

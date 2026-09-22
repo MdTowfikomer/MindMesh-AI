@@ -61,7 +61,7 @@ export const MemoryCard: React.FC<MemoryCardProps> = ({ memory, onPress }) => {
           </Text>
           <Text style={styles.quoteMarkBottom}>”</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 }}>
-            <Mic size={12} color="#38BDF8" />
+            <Mic size={12} color="#B8334F" />
             <Text style={styles.quoteAuthor}>{memory.audioDuration || '0:15'} Voice Memo</Text>
           </View>
         </View>
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   waveBar: {
     width: 3.5,
     borderRadius: 2,
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#8B1A2B',
   },
   voiceDuration: {
     fontSize: 11,

@@ -115,8 +115,8 @@ export class URLEnrichmentService {
 
       if (res.ok) {
         const data = await res.json();
-        if (data.success && data.imageUrl) {
-          scrapedImage = data.imageUrl;
+        if (data.success) {
+          scrapedImage = data.imageUrl || null;
           scrapedTitle = data.title || '';
           scrapedDescription = data.description;
           scrapedAuthor = data.author;
@@ -147,75 +147,266 @@ export class URLEnrichmentService {
         const ogDescMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i) || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i);
 
         if (ogImageMatch) scrapedImage = ogImageMatch[1];
-        if (ogTitleMatch) scrapedTitle = ogTitleMatch[1];
-        if (ogDescMatch) scrapedDescription = ogDescMatch[1];
+        if (ogTitleMatch && !scrapedTitle) scrapedTitle = ogTitleMatch[1];
+        if (ogDescMatch && !scrapedDescription) scrapedDescription = ogDescMatch[1];
       } catch (e) {
         console.warn('[URLEnrichment] Local scrape attempt bypassed:', e);
       }
     }
 
-    // For videos/reels: user specified "no need for title.!"
-    let finalTitle = detectedType === 'video' ? '' : (scrapedTitle || `Visual Card from ${domain}`);
-    const finalDescription = scrapedDescription || input;
-    const finalImage = scrapedImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
+    // Stage 3: Platform-aware title, description and tag generation
+    const result = this.buildPlatformResult(
+      cleanUrl, domain, detectedType,
+      scrapedTitle, scrapedDescription, scrapedAuthor, scrapedImage,
+      serverTags, input,
+    );
 
-    // Combine server LLM tags with fallback tags
-    const fallbackTags = this.generateMindTags(`${finalTitle} ${finalDescription} ${domain}`, domain);
-    const finalTags = serverTags.length > 0 ? serverTags : fallbackTags;
+    return result;
+  }
+
+  /**
+   * Platform-aware post-processing: crafts titles, descriptions, and tags
+   * tailored to each social platform's proxy response shape.
+   */
+  private static buildPlatformResult(
+    url: string, domain: string, detectedType: MemoryType,
+    rawTitle: string | null, rawDesc: string | null, author: string | null,
+    image: string | null, serverTags: string[], originalInput: string,
+  ): Omit<MemoryItem, 'id' | 'createdAt'> {
+    const fallbackImage = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80';
+    const desc = rawDesc || '';
+    const title = rawTitle || '';
+    const lowerDomain = domain.toLowerCase();
+
+    let finalTitle = '';
+    let finalContent = '';
+    let finalTags: string[] = [];
+    let finalType: MemoryType = detectedType;
+    let aspectRatio = 1.1;
+
+    // --- YouTube ---
+    if (lowerDomain.includes('youtube.com') || lowerDomain.includes('youtu.be')) {
+      // Proxy returns: description="Video by Author: Full Title", author, image
+      const videoTitle = desc.replace(/^Video by [^:]+:\s*/i, '').trim() || title;
+      finalTitle = this.tldr(videoTitle, 50);
+      finalContent = videoTitle;
+      finalType = 'video';
+      aspectRatio = 1.35;
+      finalTags = this.extractContentTags(videoTitle, domain);
+      if (author) finalTags.unshift(author);
+      finalTags.unshift('YouTube');
+
+    // --- Twitter / X ---
+    } else if (lowerDomain.includes('x.com') || lowerDomain.includes('twitter.com')) {
+      const tweetText = desc || '';
+      finalTitle = author
+        ? `${author}: "${this.tldr(tweetText, 40)}"`
+        : this.tldr(tweetText, 50);
+      finalContent = tweetText;
+      finalType = 'quote';
+      aspectRatio = 0.95;
+      finalTags = this.extractContentTags(tweetText, domain);
+      if (author) finalTags.push(author);
+      finalTags.unshift('X');
+
+    // --- Medium ---
+    } else if (lowerDomain.includes('medium.com')) {
+      // Proxy often returns generic "Medium" title — try to extract from URL slug
+      const slugTitle = this.titleFromSlug(url);
+      const usableTitle = (title && title !== 'Medium' && !title.includes('PAGE NOT FOUND'))
+        ? title : slugTitle;
+      finalTitle = this.tldr(usableTitle || `Article from Medium`, 50);
+      finalContent = (desc && !desc.includes('PAGE NOT FOUND')) ? desc : `Article shared from Medium.`;
+      finalType = 'article';
+      aspectRatio = 1.1;
+      finalTags = this.extractContentTags(`${usableTitle} ${finalContent}`, domain);
+      if (author) finalTags.push(author);
+      finalTags.unshift('Medium');
+
+    // --- Pinterest ---
+    } else if (lowerDomain.includes('pinterest.com')) {
+      // Proxy returns good description, but title is often generic "Take a look at this pin..."
+      const pinDesc = desc || '';
+      finalTitle = this.tldr(pinDesc, 45);
+      finalContent = pinDesc;
+      finalType = 'image';
+      aspectRatio = 1.3;
+      finalTags = this.extractContentTags(pinDesc, domain);
+      finalTags.unshift('Pinterest');
+
+    // --- Substack ---
+    } else if (lowerDomain.includes('substack.com') || lowerDomain.includes('newsletter.')) {
+      // Extract article name from URL slug since title is often just the newsletter name
+      const slugTitle = this.titleFromSlug(url);
+      const usableTitle = slugTitle || title;
+      finalTitle = this.tldr(usableTitle || `Newsletter from Substack`, 50);
+      finalContent = desc || `Substack article.`;
+      finalType = 'article';
+      aspectRatio = 1.1;
+      finalTags = this.extractContentTags(`${usableTitle} ${desc}`, domain);
+      if (author) finalTags.push(author);
+      finalTags.unshift('Substack');
+
+    // --- LinkedIn ---
+    } else if (lowerDomain.includes('linkedin.com')) {
+      const postDesc = desc || '';
+      finalTitle = this.tldr(postDesc, 45) || 'LinkedIn Post';
+      finalContent = postDesc;
+      finalType = 'bookmark';
+      aspectRatio = 1.1;
+      finalTags = this.extractContentTags(postDesc, domain);
+      if (author) finalTags.push(author);
+      finalTags.unshift('LinkedIn');
+
+    // --- Threads ---
+    } else if (lowerDomain.includes('threads.net')) {
+      // Extract handle from URL: threads.net/@handle/post/...
+      const handleMatch = url.match(/threads\.net\/@([^/]+)/);
+      const handle = handleMatch ? handleMatch[1] : null;
+      finalTitle = handle ? `@${handle} on Threads` : 'Threads Post';
+      finalContent = desc || '';
+      finalType = 'bookmark';
+      aspectRatio = 1.1;
+      finalTags = ['Threads', 'Social'];
+      if (handle) finalTags.push(handle);
+
+    // --- TikTok ---
+    } else if (lowerDomain.includes('tiktok.com')) {
+      const handleMatch = url.match(/tiktok\.com\/@([^/]+)/);
+      const handle = handleMatch ? handleMatch[1] : null;
+      finalTitle = handle ? `@${handle} on TikTok` : '';
+      finalContent = desc || '';
+      finalType = 'video';
+      aspectRatio = 1.4;
+      finalTags = ['TikTok', 'Video'];
+      if (handle) finalTags.push(handle);
+
+    // --- Instagram (often blocked — fallback) ---
+    } else if (lowerDomain.includes('instagram.com')) {
+      const isReel = url.includes('/reel/');
+      finalTitle = '';
+      finalContent = desc || `Instagram ${isReel ? 'Reel' : 'Post'}`;
+      finalType = isReel ? 'video' : 'image';
+      aspectRatio = 1.4;
+      finalTags = ['Instagram', isReel ? 'Reel' : 'Post'];
+
+    // --- Facebook ---
+    } else if (lowerDomain.includes('facebook.com') || lowerDomain.includes('fb.com')) {
+      finalTitle = this.tldr(desc, 45) || 'Facebook Post';
+      finalContent = desc || '';
+      finalType = 'bookmark';
+      aspectRatio = 1.1;
+      finalTags = this.extractContentTags(desc || '', domain);
+      finalTags.unshift('Facebook');
+
+    // --- Generic website / blog ---
+    } else {
+      finalTitle = this.tldr(title || desc || '', 50) || `Post from ${domain}`;
+      finalContent = desc || originalInput;
+      finalType = image ? 'image' : 'bookmark';
+      aspectRatio = 1.1;
+      finalTags = this.extractContentTags(`${title} ${desc}`, domain);
+    }
+
+    // Dedupe and cap tags
+    finalTags = [...new Set(finalTags.filter(t => t && t.length >= 2))].slice(0, 6);
 
     return {
-      type: detectedType,
+      type: finalType,
       title: finalTitle,
-      content: finalDescription,
-      imageUrl: finalImage,
-      tags: finalTags,
-      contextSpace: finalTags[0] || (detectedType === 'video' ? 'Video' : 'Visual'),
+      content: finalContent,
+      imageUrl: image || fallbackImage,
+      tags: finalTags.length > 0 ? finalTags : [this.capitalize(domain.split('.')[0]), 'Saved'],
+      contextSpace: finalTags[0] || 'Saved',
       urlMetadata: {
-        url: cleanUrl,
+        url,
         domain,
-        author: scrapedAuthor || undefined,
+        author: author || undefined,
         siteName: domain,
-        fullText: `${finalTitle}\n\n${finalDescription}`,
+        fullText: `${finalTitle}\n\n${finalContent}`,
       },
-      aspectRatio: domain.includes('instagram.com') ? 1.4 : (detectedType === 'video' ? 1.35 : 1.1),
+      aspectRatio,
     };
   }
 
   /**
-   * Generates specific Mind Tags based on hashtags and topic analysis
+   * Truncate text to a TLDR-style short title
    */
-  private static generateMindTags(text: string, domain: string): string[] {
-    const tags = new Set<string>();
+  private static tldr(text: string, maxLen: number): string {
+    if (!text) return '';
+    const clean = text.replace(/\s+/g, ' ').trim();
+    if (clean.length <= maxLen) return clean;
+    return clean.slice(0, maxLen).replace(/\s\S*$/, '') + '...';
+  }
 
-    // 1. Extract explicit #hashtags from Instagram/social caption
+  /**
+   * Extract a human-readable title from a URL slug
+   * e.g. "/p/how-to-think-about-your-career-abf5cee520be" -> "How to Think About Your Career"
+   */
+  private static titleFromSlug(url: string): string {
+    try {
+      const path = new URL(url).pathname;
+      // Find the most slug-like path segment (longest with hyphens)
+      const segments = path.split('/').filter(s => s && s.includes('-'));
+      if (segments.length === 0) return '';
+      const slug = segments.reduce((a, b) => a.length > b.length ? a : b);
+      // Remove trailing hash IDs (hex strings 8+ chars)
+      const cleaned = slug.replace(/-[a-f0-9]{8,}$/i, '');
+      return cleaned
+        .split('-')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    } catch {
+      return '';
+    }
+  }
+
+  private static capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  /**
+   * Extract meaningful tags from content text via keyword analysis
+   */
+  private static extractContentTags(text: string, domain: string): string[] {
+    const tags = new Set<string>();
+    if (!text) return [];
+
+    // Extract #hashtags
     const hashMatches = text.match(/#([\w\d_-]+)/g);
     if (hashMatches) {
       for (const h of hashMatches) {
-        const cleanTag = h.replace('#', '').trim();
-        if (cleanTag.length >= 2 && cleanTag.length <= 25) {
-          tags.add(cleanTag.charAt(0).toUpperCase() + cleanTag.slice(1));
-        }
+        const t = h.replace('#', '').trim();
+        if (t.length >= 2 && t.length <= 25) tags.add(this.capitalize(t));
       }
     }
 
-    // 2. Keyword Topic Taxonomy
     const lower = text.toLowerCase();
-    if (lower.includes('instagram')) tags.add('Instagram');
-    if (lower.includes('reel')) tags.add('Reel');
-    if (lower.includes('youtube') || lower.includes('video')) tags.add('Video');
-    if (lower.includes('knight') || lower.includes('armor') || lower.includes('warrior')) tags.add('Fantasy Warrior');
-    if (lower.includes('art') || lower.includes('render') || lower.includes('3d')) tags.add('Digital Art');
-    if (lower.includes('concept') || lower.includes('design')) tags.add('Design');
-    if (lower.includes('school') || lower.includes('education')) tags.add('Education');
-    if (lower.includes('pricing') || lower.includes('paywall')) tags.add('Pricing');
-    if (lower.includes('revenuecat') || lower.includes('subscription')) tags.add('RevenueCat');
 
-    if (tags.size === 0) {
-      const baseDomain = domain.split('.')[0];
-      tags.add(baseDomain.charAt(0).toUpperCase() + baseDomain.slice(1));
-      tags.add('VisualCard');
+    // Topic keywords
+    const topics: [string, string][] = [
+      ['startup', 'Startup'], ['founder', 'Founder'], ['entrepreneur', 'Entrepreneurship'],
+      ['design', 'Design'], ['product', 'Product'], ['engineer', 'Engineering'],
+      ['ai ', 'AI'], ['artificial intelligence', 'AI'], ['machine learning', 'ML'],
+      ['react', 'React'], ['javascript', 'JavaScript'], ['typescript', 'TypeScript'],
+      ['mobile', 'Mobile'], ['ios', 'iOS'], ['android', 'Android'],
+      ['pricing', 'Pricing'], ['paywall', 'Monetization'], ['subscription', 'Subscription'],
+      ['revenuecat', 'RevenueCat'], ['saas', 'SaaS'],
+      ['art', 'Art'], ['painting', 'Art'], ['illustration', 'Illustration'],
+      ['photography', 'Photography'], ['portrait', 'Portrait'],
+      ['music', 'Music'], ['recipe', 'Recipe'], ['fitness', 'Fitness'],
+      ['fashion', 'Fashion'], ['travel', 'Travel'], ['food', 'Food'],
+      ['crypto', 'Crypto'], ['blockchain', 'Web3'],
+      ['marketing', 'Marketing'], ['growth', 'Growth'],
+      ['open source', 'OpenSource'], ['tutorial', 'Tutorial'],
+      ['career', 'Career'], ['hiring', 'Hiring'], ['interview', 'Interview'],
+      ['education', 'Education'], ['school', 'Education'],
+    ];
+
+    for (const [keyword, tag] of topics) {
+      if (lower.includes(keyword)) tags.add(tag);
     }
 
-    return Array.from(tags).slice(0, 6);
+    return Array.from(tags).slice(0, 5);
   }
 }

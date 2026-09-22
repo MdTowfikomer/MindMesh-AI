@@ -46,10 +46,19 @@ export const GraphNodeComponent: React.FC<GraphNodeComponentProps> = React.memo(
     onDragEnd,
     onDragMove,
   }) => {
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
+    // Absolute position tracked entirely on the UI thread — no translate offset needed
+    const posX = useSharedValue(node.x);
+    const posY = useSharedValue(node.y);
     const nodeScale = useSharedValue(1);
     const isDragging = useSharedValue(false);
+
+    // Sync position from props only when not dragging (layout changes, reset, etc.)
+    useEffect(() => {
+      if (!isDragging.value) {
+        posX.value = node.x;
+        posY.value = node.y;
+      }
+    }, [node.x, node.y, posX, posY, isDragging]);
 
     // Floating tooltip animation
     const tooltipOpacity = useSharedValue(0);
@@ -89,28 +98,27 @@ export const GraphNodeComponent: React.FC<GraphNodeComponentProps> = React.memo(
       [node.id, onDragEnd],
     );
 
+    const startX = useSharedValue(0);
+    const startY = useSharedValue(0);
+
     const panGesture = Gesture.Pan()
       .maxPointers(1)
       .minDistance(GRAPH_CONFIG.TAP_DRAG_THRESHOLD)
       .onStart(() => {
         isDragging.value = true;
+        startX.value = posX.value;
+        startY.value = posY.value;
         nodeScale.value = withSpring(1.18, SPRING_CONFIG);
       })
       .onUpdate((e) => {
         const s = zoomScale || 1;
-        translateX.value = e.translationX / s;
-        translateY.value = e.translationY / s;
-        const newX = node.x + translateX.value;
-        const newY = node.y + translateY.value;
-        runOnJS(fireMove)(newX, newY);
+        posX.value = startX.value + e.translationX / s;
+        posY.value = startY.value + e.translationY / s;
+        runOnJS(fireMove)(posX.value, posY.value);
       })
       .onEnd(() => {
         nodeScale.value = withSpring(1, SPRING_CONFIG);
-        const finalX = node.x + translateX.value;
-        const finalY = node.y + translateY.value;
-        runOnJS(fireDragEnd)(finalX, finalY);
-        translateX.value = 0;
-        translateY.value = 0;
+        runOnJS(fireDragEnd)(posX.value, posY.value);
         isDragging.value = false;
       });
 
@@ -123,9 +131,9 @@ export const GraphNodeComponent: React.FC<GraphNodeComponentProps> = React.memo(
     const animatedNodeStyle = useAnimatedStyle(() => {
       const baseScale = isSelected ? 1.25 : isSearchMatched ? 1.15 : 1;
       return {
+        left: posX.value - node.radius,
+        top: posY.value - node.radius,
         transform: [
-          { translateX: translateX.value },
-          { translateY: translateY.value },
           { scale: baseScale * nodeScale.value },
         ],
         zIndex: isDragging.value ? 100 : isSelected ? 10 : isSearchMatched ? 8 : 5,
@@ -140,16 +148,14 @@ export const GraphNodeComponent: React.FC<GraphNodeComponentProps> = React.memo(
           style={[
             styles.nodeCircle,
             {
-              left: node.x - node.radius,
-              top: node.y - node.radius,
               width: node.radius * 2,
               height: node.radius * 2,
               borderRadius: node.radius,
-              backgroundColor: isSelected ? '#38BDF8' : node.color,
+              backgroundColor: isSelected ? '#8B1A2B' : node.color,
               borderColor: isSelected
                 ? '#FFFFFF'
                 : isConnected || isSearchMatched
-                ? '#38BDF8'
+                ? '#B8334F'
                 : 'rgba(255, 255, 255, 0.25)',
               borderWidth: isSelected ? 3 : isSearchMatched ? 2.5 : 1.5,
             },

@@ -82,7 +82,7 @@ ${actions || '1. [ ] Review connected insights in mobile dashboard'}
             <Text style={styles.fitText}>{(connection.confidenceScore * 100).toFixed(0)}% Match</Text>
           </View>
           <View style={styles.npuBadge}>
-            <Zap size={10} color="#38BDF8" />
+            <Zap size={10} color="#B8334F" />
             <Text style={styles.npuBadgeText}>Snapdragon NPU {npuLatencyMs}ms</Text>
           </View>
         </View>
@@ -187,7 +187,7 @@ ${actions || '1. [ ] Review connected insights in mobile dashboard'}
       {/* Action: Sync Next Steps via Office Kit */}
       <View style={styles.actionButtonsRow}>
         <TouchableOpacity style={styles.officeKitButton} activeOpacity={0.85} onPress={handleOfficeKitSync}>
-          <Share2 size={14} color="#38BDF8" />
+          <Share2 size={14} color="#B8334F" />
           <Text style={styles.officeKitButtonText}>Sync Next Steps via Office Kit (.md)</Text>
         </TouchableOpacity>
       </View>
@@ -230,17 +230,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
+    backgroundColor: 'rgba(139, 26, 43, 0.15)',
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.25)',
+    borderColor: 'rgba(139, 26, 43, 0.4)',
   },
   npuBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#38BDF8',
+    color: '#B8334F',
   },
   contextSpaceText: {
     fontSize: 11,
@@ -314,8 +314,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#38BDF8',
-    borderColor: '#38BDF8',
+    backgroundColor: '#8B1A2B',
+    borderColor: '#8B1A2B',
   },
   nextActionText: {
     flex: 1,
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
   officeKitButtonText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#38BDF8',
+    color: '#B8334F',
     letterSpacing: 0.2,
   },
   buildPlanButton: {

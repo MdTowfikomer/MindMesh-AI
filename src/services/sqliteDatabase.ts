@@ -62,6 +62,24 @@ export const SQLiteDatabaseService = {
         await db.execAsync('ALTER TABLE connections ADD COLUMN targetMemoryId TEXT;');
       } catch (_) {}
 
+      // Migrate memories table — add columns missing from the original schema
+      const memoryMigrations = [
+        'ALTER TABLE memories ADD COLUMN urlMetadata TEXT;',
+        'ALTER TABLE memories ADD COLUMN mediaUrl TEXT;',
+        'ALTER TABLE memories ADD COLUMN fileSize TEXT;',
+        'ALTER TABLE memories ADD COLUMN pageCount INTEGER;',
+        'ALTER TABLE memories ADD COLUMN directory TEXT;',
+        'ALTER TABLE memories ADD COLUMN personalNote TEXT;',
+        'ALTER TABLE memories ADD COLUMN deletedAt TEXT;',
+        'ALTER TABLE memories ADD COLUMN aspectRatio REAL;',
+        'ALTER TABLE memories ADD COLUMN entities TEXT;',
+        'ALTER TABLE memories ADD COLUMN isPinned INTEGER DEFAULT 0;',
+        'ALTER TABLE memories ADD COLUMN invisibleTags TEXT;',
+        'ALTER TABLE memories ADD COLUMN dominantColors TEXT;',
+      ];
+      for (const sql of memoryMigrations) {
+        try { await db.execAsync(sql); } catch (_) {}
+      }
       // Create Build Plans Table
       await db.execAsync(`
         CREATE TABLE IF NOT EXISTS build_plans (
@@ -130,8 +148,11 @@ export const SQLiteDatabaseService = {
       const db = await this.getDb();
       await db.runAsync(
         `INSERT OR REPLACE INTO memories (
-          id, type, title, content, imageUrl, ocrText, audioDuration, audioWaveform, tags, contextSpace, confidenceScore, createdAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          id, type, title, content, imageUrl, ocrText, audioDuration, audioWaveform,
+          tags, contextSpace, confidenceScore, createdAt,
+          urlMetadata, mediaUrl, fileSize, pageCount, directory, personalNote,
+          deletedAt, aspectRatio, entities, isPinned, invisibleTags, dominantColors
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           memory.id,
           memory.type,
@@ -145,6 +166,18 @@ export const SQLiteDatabaseService = {
           memory.contextSpace,
           memory.confidenceScore ?? 0.95,
           memory.createdAt,
+          memory.urlMetadata ? JSON.stringify(memory.urlMetadata) : null,
+          memory.mediaUrl || null,
+          memory.fileSize || null,
+          memory.pageCount ?? null,
+          memory.directory || null,
+          memory.personalNote || null,
+          memory.deletedAt || null,
+          memory.aspectRatio ?? null,
+          memory.entities ? JSON.stringify(memory.entities) : null,
+          memory.isPinned ? 1 : 0,
+          memory.invisibleTags ? JSON.stringify(memory.invisibleTags) : null,
+          memory.dominantColors ? JSON.stringify(memory.dominantColors) : null,
         ]
       );
     } catch (error) {
@@ -169,6 +202,18 @@ export const SQLiteDatabaseService = {
         contextSpace: row.contextSpace,
         confidenceScore: row.confidenceScore,
         createdAt: row.createdAt,
+        urlMetadata: row.urlMetadata ? JSON.parse(row.urlMetadata) : undefined,
+        mediaUrl: row.mediaUrl || undefined,
+        fileSize: row.fileSize || undefined,
+        pageCount: row.pageCount ?? undefined,
+        directory: row.directory || undefined,
+        personalNote: row.personalNote || undefined,
+        deletedAt: row.deletedAt || undefined,
+        aspectRatio: row.aspectRatio ?? undefined,
+        entities: row.entities ? JSON.parse(row.entities) : undefined,
+        isPinned: !!row.isPinned,
+        invisibleTags: row.invisibleTags ? JSON.parse(row.invisibleTags) : undefined,
+        dominantColors: row.dominantColors ? JSON.parse(row.dominantColors) : undefined,
       }));
     } catch (error) {
       console.error('[SQLiteDatabaseService] Error getting all memories:', error);

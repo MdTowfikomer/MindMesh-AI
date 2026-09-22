@@ -34,6 +34,12 @@ export const CyberTheme = {
     amber: '#FFB703',
     rose: '#FF007F',
 
+    // Brand Accent — Burgundy system
+    accent: '#8B1A2B',
+    accentLight: '#B8334F',      // Higher luminance for small text/icons on dark
+    accentSurface: 'rgba(139, 26, 43, 0.15)',  // Subtle background tint
+    accentBorder: 'rgba(139, 26, 43, 0.4)',    // Border highlight
+
     // Neon Glow Presets
     glows: {
       cyan: 'rgba(0, 242, 254, 0.28)',

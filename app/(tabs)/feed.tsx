@@ -288,7 +288,7 @@ export default function FeedScreen() {
                 }}
                 activeOpacity={0.8}
               >
-                <IconComp size={12} color={isSelected ? '#101114' : '#94A3B8'} />
+                <IconComp size={12} color={isSelected ? '#F8FAFC' : '#94A3B8'} />
                 <Text style={[styles.typePillText, isSelected && styles.typePillTextActive]}>
                   {item.label}
                 </Text>
@@ -494,8 +494,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   typePillActive: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#F8FAFC',
+    backgroundColor: '#8B1A2B',
+    borderColor: '#8B1A2B',
   },
   typePillText: {
     fontSize: 11,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
   typePillTextActive: {
-    color: '#0F1015',
+    color: '#F8FAFC',
     fontWeight: '700',
   },
   toastBanner: {

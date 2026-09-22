@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
   tableFields: {
     fontSize: 11,
     fontFamily: theme.fonts.mono,
-    color: '#38BDF8',
+    color: '#B8334F',
   },
   rcHeaderBanner: {
     flexDirection: 'row',

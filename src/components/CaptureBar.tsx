@@ -17,6 +17,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import { VisionAIService } from '../services/visionAI';
 import { VoiceRecorderService } from '../services/voiceRecorder';
 import { AudioTranscriptionService } from '../services/audioTranscription';
+import * as FileSystem from 'expo-file-system/legacy';
 import { FullThoughtEditorModal } from './FullThoughtEditorModal';
 import { CameraCaptureModal } from './CameraCaptureModal';
 import { RemoteLogger } from '../services/logger';
@@ -189,7 +190,22 @@ export const CaptureBar: React.FC = () => {
 
       const result = await VoiceRecorderService.stopRecording();
       if (result) {
-        const transcription = await AudioTranscriptionService.transcribe(result.uri);
+        // Copy recording from cache to permanent storage
+        let permanentUri = result.uri;
+        try {
+          const audioDir = `${FileSystem.documentDirectory}audio/`;
+          const dirInfo = await FileSystem.getInfoAsync(audioDir);
+          if (!dirInfo.exists) {
+            await FileSystem.makeDirectoryAsync(audioDir, { intermediates: true });
+          }
+          const filename = `voice_${Date.now()}.m4a`;
+          permanentUri = `${audioDir}${filename}`;
+          await FileSystem.copyAsync({ from: result.uri, to: permanentUri });
+        } catch (e) {
+          console.warn('[CaptureBar] Failed to copy audio to permanent storage:', e);
+        }
+
+        const transcription = await AudioTranscriptionService.transcribe(permanentUri);
 
         addMemory({
           type: 'voice',
@@ -197,7 +213,7 @@ export const CaptureBar: React.FC = () => {
           content: `[${transcription.category}] ${transcription.transcription}`,
           audioDuration: `${Math.floor(result.durationSeconds / 60)}:${(result.durationSeconds % 60).toString().padStart(2, '0')}`,
           audioWaveform: [20, 50, 90, 70, 100, 40, 80, 60, 95, 30],
-          mediaUrl: result.uri,
+          mediaUrl: permanentUri,
           tags: [...transcription.tags, transcription.category],
           contextSpace: transcription.tags[0] || 'Voice Idea',
         });

@@ -288,7 +288,7 @@ export const VoiceMemoPlayer: React.FC<VoiceMemoPlayerProps> = ({
       <View style={styles.topHeader}>
         <View style={styles.badgeRow}>
           <View style={styles.micBadgeIcon}>
-            <Mic size={12} color="#38BDF8" />
+            <Mic size={12} color="#B8334F" />
           </View>
           <Text style={styles.badgeTitle}>Voice Thought</Text>
         </View>
@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   playButtonActive: {
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#8B1A2B',
   },
   sliderTrackArea: {
     flex: 1,
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   waveBarFilled: {
-    backgroundColor: '#38BDF8',
+    backgroundColor: '#B8334F',
   },
   scrubThumb: {
     position: 'absolute',
@@ -479,7 +479,7 @@ const styles = StyleSheet.create({
     height: 10,
     borderRadius: 5,
     backgroundColor: '#FFFFFF',
-    shadowColor: '#38BDF8',
+    shadowColor: '#8B1A2B',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.9,
     shadowRadius: 4,
