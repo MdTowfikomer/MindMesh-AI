@@ -84,7 +84,12 @@ class MainActivity : ReactActivity() {
         val finalUriString = cachedLocalFileUri?.toString() ?: imageUri.toString()
         Log.d(TAG, "Final shared image URI for React Native: $finalUriString")
 
-        val deepLinkUri = Uri.parse("mindmesh://feed?sharedImage=${Uri.encode(finalUriString)}")
+        // Also capture any accompanying text/URL (e.g. Instagram sends image + caption)
+        var extraText = intent.getStringExtra(Intent.EXTRA_TEXT)
+        if (extraText == null) extraText = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
+        val encodedText = if (!extraText.isNullOrBlank()) "&sharedText=${Uri.encode(extraText)}" else ""
+
+        val deepLinkUri = Uri.parse("mindmesh://feed?sharedImage=${Uri.encode(finalUriString)}$encodedText")
         intent.action = Intent.ACTION_VIEW
         intent.data = deepLinkUri
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)

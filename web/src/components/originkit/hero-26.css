@@ -1,0 +1,411 @@
+/* hero-26 — scoped with ok-h26- to avoid collisions in shared preview docs. */
+
+@import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Inter+Tight:wght@400&display=swap");
+
+.ok-h26-hero,
+.ok-h26-hero * {
+  box-sizing: border-box;
+}
+
+.ok-h26-hero {
+  position: relative;
+  width: 100%;
+  min-height: 100svh;
+  height: 100svh;
+  flex-shrink: 0;
+  background: #010101;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: #fff;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ok-h26-hero a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.ok-h26-hero button,
+.ok-h26-hero p,
+.ok-h26-hero h1 {
+  margin: 0;
+}
+
+.ok-h26-hero button {
+  border: 0;
+  background: none;
+  color: inherit;
+}
+
+/* ---------- Nav ---------- */
+
+.ok-h26-nav {
+  width: 100%;
+  max-width: 1710px;
+  margin: 0 auto;
+  height: 56px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 2;
+}
+
+.ok-h26-logo {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  overflow: hidden;
+}
+
+.ok-h26-logomark {
+  position: absolute;
+  left: 3.72px;
+  top: 0.96px;
+  width: 24.56px;
+  height: 30.08px;
+}
+
+.ok-h26-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ok-h26-nav-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 6px 14px;
+  font-family: "Geist Mono", monospace;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.ok-h26-nav-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.ok-h26-nav-pill--cta {
+  padding: 6px 16px;
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.ok-h26-nav-pill--cta:hover {
+  background: #e4e4e7;
+  color: #000000;
+  transform: scale(1.02);
+}
+
+.ok-h26-nav-pill--cta .ok-h26-nav-pill__label {
+  padding: 0;
+  border-right: none;
+  color: #000000;
+}
+
+.ok-h26-nav-pill__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+}
+
+.ok-h26-nav-pill__icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ok-h26-nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity 0.15s ease;
+}
+
+.ok-h26-nav-toggle:hover {
+  opacity: 0.7;
+}
+
+.ok-h26-nav-toggle img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- Hero media ---------- */
+
+.ok-h26-hero-media {
+  position: relative;
+  flex: 1;
+  margin: 0 20px 20px 20px;
+  overflow: hidden;
+  background: #000;
+}
+
+.ok-h26-hero-media__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ok-h26-hero-media__gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 25%,
+    rgba(2, 2, 4, 0.7) 70%,
+    #020204 100%
+  );
+  pointer-events: none;
+}
+
+.ok-h26-hero-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+/* ---------- Hero content ---------- */
+
+.ok-h26-hero-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 840px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.ok-h26-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  padding: 6px 18px;
+  font-family: "Geist Mono", monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+}
+
+.ok-h26-badge:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.ok-h26-hero-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.ok-h26-hero-text h1 {
+  font-family: "Inter Tight", sans-serif;
+  font-weight: 400;
+  font-size: clamp(42px, 5.8vw, 76px);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #fff;
+  width: 100%;
+  text-align: center;
+}
+
+.ok-h26-hero-text p {
+  font-family: "Inter Tight", sans-serif;
+  font-weight: 400;
+  font-size: clamp(14px, 1.8vw, 17px);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.65);
+  max-width: 640px;
+  margin: 0 auto;
+  text-shadow: none;
+  width: 100%;
+  text-align: center;
+}
+
+.ok-h26-cta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.ok-h26-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  padding: 12px 26px;
+  border-radius: 9999px;
+  font-family: "Geist Mono", monospace;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.ok-h26-btn__label {
+  padding: 0;
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  line-height: normal;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-right: none;
+}
+
+.ok-h26-btn__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+}
+
+.ok-h26-btn__icon img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ok-h26-btn--white {
+  background: #ffffff;
+  color: #000000;
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.15);
+}
+
+.ok-h26-btn--white .ok-h26-btn__label {
+  color: #000000;
+}
+
+.ok-h26-btn--white:hover {
+  background: #f0f0f5;
+  transform: scale(1.03);
+  box-shadow: 0 14px 38px rgba(255, 255, 255, 0.22);
+}
+
+.ok-h26-btn--blue {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.ok-h26-btn--blue .ok-h26-btn__label {
+  color: #ffffff;
+}
+
+.ok-h26-btn--blue:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: scale(1.03);
+}
+
+/* ---------- Tablet ---------- */
+
+@media (max-width: 1024px) {
+  .ok-h26-nav-links {
+    display: none;
+  }
+
+  .ok-h26-nav-toggle {
+    display: flex;
+  }
+
+  .ok-h26-hero-content {
+    width: 100%;
+    max-width: calc(100% - 48px);
+    margin: 0 auto;
+    gap: 18px;
+  }
+}
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 640px) {
+  .ok-h26-hero-content {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .ok-h26-badge {
+    font-size: 10px;
+    padding: 5px 12px;
+  }
+
+  .ok-h26-cta-row {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .ok-h26-btn {
+    width: 100%;
+  }
+}

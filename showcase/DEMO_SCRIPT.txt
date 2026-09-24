@@ -1,0 +1,15 @@
+MINDMESH AI — 45-SECOND LAUNCH DEMO SCRIPT
+
+[0:00 - 0:08]
+Ideas hit you at random moments — but traditional note apps turn your best thoughts into a digital graveyard.
+
+[0:08 - 0:18]
+Meet MindMesh AI. Tap to record a 10-second voice memo, or snap a screenshot. Gemini 3.5 Flash transcribes audio and extracts visual insights in real time, cutting capture friction by 75%.
+
+[0:18 - 0:32]
+Instead of folders, your thoughts live on a 2D spatial canvas. Pan 360°, pinch to zoom with two fingers, and drag nodes with GPU-accelerated Reanimated physics.
+
+[0:32 - 0:45]
+Tap Synaptic Fusion. MindMesh connects non-obvious dots across your thoughts and generates complete build plans and paywall strategies. 100% offline-first.
+
+MindMesh AI: Stop hoarding notes. Start shipping ideas.

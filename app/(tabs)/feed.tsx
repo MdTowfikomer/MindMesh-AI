@@ -75,13 +75,12 @@ export default function FeedScreen() {
 
   // Listen for native Android inbound share intents from external apps (Screenshots, Gallery, Instagram, Twitter/X)
   useEffect(() => {
-    const handleSharedContent = async (data: string, type: 'text' | 'image') => {
-      console.log('[FeedScreen] 📥 Incoming shared content:', { type, data: data.slice(0, 100) });
-      RemoteLogger.info(`📥 Inbound Android Share Intent: ${type}`, { raw: data.slice(0, 300) }, 'ShareIntentReceiver');
+    const handleSharedContent = async (data: string, type: 'text' | 'image', extraText?: string) => {
+      console.log('[FeedScreen] Incoming shared content:', { type, data: data.slice(0, 100), extraText: extraText?.slice(0, 100) });
+      RemoteLogger.info(`Inbound Android Share Intent: ${type}`, { raw: data.slice(0, 300) }, 'ShareIntentReceiver');
       setIsSaving(true);
       try {
         if (type === 'image') {
-          // Copy content:// to cache for readability, then analyze with Gemini Vision
           let cachedUri = data;
           try {
             cachedUri = await ShareIntentService.copyToCache(data);
@@ -91,20 +90,29 @@ export default function FeedScreen() {
           }
 
           const visionResult = await VisionAIService.analyzeImage(cachedUri);
-          console.log('[FeedScreen] 📸 Screenshot Vision Result:', {
-            title: visionResult.title,
-            tags: visionResult.tags,
-            classification: visionResult.classification,
-          });
+
+          // Extract URL and domain from accompanying text (e.g. Instagram sends image + caption/URL)
+          let urlMetadata: any = undefined;
+          if (extraText) {
+            const urlMatch = extraText.match(/(https?:\/\/[^\s]+)/i);
+            if (urlMatch) {
+              try {
+                const domain = new URL(urlMatch[1]).hostname.replace(/^www\./, '');
+                urlMetadata = { url: urlMatch[1], domain, siteName: domain };
+              } catch {}
+            }
+          }
+
           addMemory({
             type: visionResult.classification || 'image',
             title: visionResult.title || 'Saved Screenshot',
-            content: visionResult.tldr || visionResult.ocrText || 'Captured visual screenshot',
+            content: visionResult.tldr || visionResult.ocrText || extraText || 'Captured visual screenshot',
             imageUrl: cachedUri,
             ocrText: visionResult.ocrText,
             tags: visionResult.tags.length > 0 ? visionResult.tags : ['Screenshot'],
             contextSpace: visionResult.tags[0] || 'Screenshot',
             confidenceScore: visionResult.confidenceScore,
+            urlMetadata,
           });
           triggerSynapticFusion();
           const { ByokService } = await import('../../src/services/byokService');
@@ -151,17 +159,12 @@ export default function FeedScreen() {
     // Check if app was opened via share intent
     ShareIntentService.getSharedContent().then((shared) => {
       if (shared.type && shared.data) {
-        handleSharedContent(shared.data, shared.type);
+        handleSharedContent(shared.data, shared.type, shared.extraText);
       }
     });
 
-    // Listen for share intents while app is open
-    const unsubscribe = ShareIntentService.addListener((type, data) => {
-      if (type === 'image') {
-        handleSharedContent(data, 'image');
-      } else {
-        handleSharedContent(data, 'text');
-      }
+    const unsubscribe = ShareIntentService.addListener((type, data, extraText) => {
+      handleSharedContent(data, type, extraText);
     });
 
     return unsubscribe;

@@ -10,6 +10,9 @@ pnpm-debug.log*
 dist/
 web-build/
 expo-env.d.ts
+web/node_modules/
+web/.next/
+web/.vercel/
 
 # Build & Native Outputs
 *.apk
@@ -36,6 +39,7 @@ ios/Pods/
 .tmp/
 *.tmp
 *.log
+showcase/render_frames/
 .eslintcache
 .stylelintcache
 
@@ -50,3 +54,8 @@ Thumbs.db
 # Testing & Coverage
 coverage/
 .nyc_output/
+
+
+.cortex/
+HANDOFF_KNOWLEDGE_GRAPH.md
+command.txt

@@ -12,34 +12,38 @@ export class ShareIntentService {
   /**
    * Safely parses deep link URLs into structured shared content
    */
-  static parseUrl(url: string): { type: 'text' | 'image' | null; data: string | null } {
+  static parseUrl(url: string): { type: 'text' | 'image' | null; data: string | null; extraText?: string } {
     try {
       if (!url) return { type: null, data: null };
 
-      if (url.includes('sharedImage=')) {
-        const raw = url.substring(url.indexOf('sharedImage=') + 12);
-        if (raw) {
-          let decoded = raw;
-          try {
-            decoded = decodeURIComponent(raw);
-          } catch {
-            decoded = raw;
+      // Parse as URL to handle multi-param deep links (e.g. sharedImage=...&sharedText=...)
+      let imageParam: string | null = null;
+      let textParam: string | null = null;
+
+      if (url.includes('sharedImage=') || url.includes('sharedText=')) {
+        try {
+          const parsed = new URL(url);
+          imageParam = parsed.searchParams.get('sharedImage');
+          textParam = parsed.searchParams.get('sharedText');
+        } catch {
+          // Fallback: manual extraction
+          if (url.includes('sharedImage=')) {
+            const raw = url.substring(url.indexOf('sharedImage=') + 12).split('&')[0];
+            imageParam = decodeURIComponent(raw);
           }
-          return { type: 'image', data: decoded };
+          if (url.includes('sharedText=')) {
+            const raw = url.substring(url.indexOf('sharedText=') + 11).split('&')[0];
+            textParam = decodeURIComponent(raw);
+          }
         }
       }
 
-      if (url.includes('sharedText=')) {
-        const raw = url.substring(url.indexOf('sharedText=') + 11);
-        if (raw) {
-          let decoded = raw;
-          try {
-            decoded = decodeURIComponent(raw);
-          } catch {
-            decoded = raw;
-          }
-          return { type: 'text', data: decoded };
-        }
+      if (imageParam) {
+        return { type: 'image', data: imageParam, extraText: textParam || undefined };
+      }
+
+      if (textParam) {
+        return { type: 'text', data: textParam };
       }
 
       // Direct file:// or content:// or image URLs
@@ -61,7 +65,7 @@ export class ShareIntentService {
   /**
    * Check if the app was opened via a share intent and extract shared data
    */
-  static async getSharedContent(): Promise<{ type: 'text' | 'image' | null; data: string | null }> {
+  static async getSharedContent(): Promise<{ type: 'text' | 'image' | null; data: string | null; extraText?: string }> {
     try {
       const initialUrl = await Linking.getInitialURL();
       const now = Date.now();
@@ -107,12 +111,11 @@ export class ShareIntentService {
   /**
    * Listen for share intents while app is already open
    */
-  static addListener(callback: (type: 'text' | 'image', data: string) => void): () => void {
+  static addListener(callback: (type: 'text' | 'image', data: string, extraText?: string) => void): () => void {
     const subscription = Linking.addEventListener('url', (event) => {
       const now = Date.now();
       if (!event.url) return;
 
-      // Only ignore if identical event received within 1.2s (prevents rapid double-trigger)
       if (event.url === this.lastProcessedUrl && now - this.lastProcessedTime < 1200) {
         return;
       }
@@ -122,7 +125,7 @@ export class ShareIntentService {
 
       const parsed = this.parseUrl(event.url);
       if (parsed.type && parsed.data) {
-        callback(parsed.type, parsed.data);
+        callback(parsed.type, parsed.data, parsed.extraText);
       }
     });
 
