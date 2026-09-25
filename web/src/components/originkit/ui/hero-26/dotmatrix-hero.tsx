@@ -254,7 +254,7 @@ function mapSpeedUiToShader(ui: number): number {
     return ui * 0.05;
 }
 function mapCellSizeUiToShader(ui: number): number {
-    return mapLinear(ui, 1, 100, 6, 60);
+    return mapLinear(ui, 1, 100, 3.5, 38);
 }
 function mapGammaUiToShader(ui: number): number {
     return mapLinear(ui, 1, 20, 0.5, 8);
@@ -377,7 +377,7 @@ function initCanvas2DFallback(
 
     let time = 0;
     const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-    const baseStep = isMobile ? Math.max(cellSize, 14) : Math.max(cellSize, 11);
+    const baseStep = isMobile ? Math.max(cellSize, 8.5) : Math.max(cellSize, 7);
 
     const render = () => {
         time += 0.014 * (speed / 3);
@@ -401,8 +401,8 @@ function initCanvas2DFallback(
                 const w3 = Math.sin((u + v) * 3.2 + time * 0.8) * 0.2;
                 const val = (w1 + w2 + w3 + 1.0) * 0.5;
 
-                const radius = (1.2 + val * 3.4) * dpr;
-                const alpha = Math.min(1, Math.max(0.08, Math.pow(val, 2.2) * 0.95));
+                const radius = (0.65 + val * 1.8) * dpr;
+                const alpha = Math.min(1, Math.max(0.06, Math.pow(val, 2.3) * 0.9));
 
                 ctx.beginPath();
                 ctx.arc(px, py, radius, 0, Math.PI * 2);
@@ -1020,7 +1020,7 @@ type DotmatrixHeroProps = {
 };
 
 export function DotmatrixHero({
-  badge = "MINDMESH AI • ON-DEVICE COGNITIVE MESH",
+  badge,
   titleLine1 = "Remember Everything.",
   titleLine2 = "Organize Nothing.",
   description = "Turn scattered screenshots, voice memos, and bookmarks into an interconnected, living knowledge graph. Engineered with on-device SQLite, ambient AI synthesis, and instant export to Obsidian.",
@@ -1088,8 +1088,8 @@ export function DotmatrixHero({
             colors={paletteColors}
             frequency={1.5}
             speed={2}
-            cellSize={12}
-            gamma={2.4}
+            cellSize={8}
+            gamma={2.5}
             paletteBias={6}
           />
         </div>
@@ -1097,7 +1097,7 @@ export function DotmatrixHero({
 
         <div className="ok-h26-hero-inner">
           <div className="ok-h26-hero-content">
-            <div className="ok-h26-badge">{badge}</div>
+            {badge && <div className="ok-h26-badge">{badge}</div>}
             <div className="ok-h26-hero-text">
               <h1>
                 {titleLine1}
