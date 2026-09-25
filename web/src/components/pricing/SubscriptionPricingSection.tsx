@@ -38,13 +38,10 @@ export default function SubscriptionPricingSection() {
       id="pricing"
       className="pricing-section relative w-full py-28 px-6 md:px-12 bg-[#020204] text-white border-t border-white/5 overflow-hidden"
     >
-      {/* Background subtle atmospheric glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-transparent blur-[140px] pointer-events-none" />
-
       <div className="mx-auto max-w-6xl relative z-10">
         {/* Section Header */}
         <div className="pricing-header flex flex-col items-center text-center mb-16">
-          <p className="text-xs font-mono tracking-widest text-zinc-400 uppercase mb-3">
+          <p className="text-xs font-mono tracking-widest text-[#E06D85] uppercase mb-3">
             MEMBERSHIP & REVENUECAT INTEGRATION
           </p>
 
@@ -63,7 +60,7 @@ export default function SubscriptionPricingSection() {
               onClick={() => setBillingCycle("annual")}
               className={`px-5 py-2 rounded-full text-xs font-mono tracking-wider transition-all ${
                 billingCycle === "annual"
-                  ? "bg-white text-black font-semibold shadow-lg"
+                  ? "bg-[#8B1A2B] text-white font-semibold shadow-md shadow-[#8B1A2B]/25 border border-[#B8334F]/40"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -74,7 +71,7 @@ export default function SubscriptionPricingSection() {
               onClick={() => setBillingCycle("monthly")}
               className={`px-5 py-2 rounded-full text-xs font-mono tracking-wider transition-all ${
                 billingCycle === "monthly"
-                  ? "bg-white text-black font-semibold shadow-lg"
+                  ? "bg-[#8B1A2B] text-white font-semibold shadow-md shadow-[#8B1A2B]/25 border border-[#B8334F]/40"
                   : "text-white/60 hover:text-white"
               }`}
             >
@@ -142,16 +139,16 @@ export default function SubscriptionPricingSection() {
           </div>
 
           {/* Pro Tier (RevenueCat) */}
-          <div className="pricing-card flex flex-col justify-between rounded-3xl border border-amber-500/30 bg-gradient-to-b from-[#14121a] to-[#0a0910] p-8 md:p-10 relative overflow-hidden shadow-2xl shadow-amber-500/5">
+          <div className="pricing-card flex flex-col justify-between rounded-3xl border border-[#8B1A2B]/40 bg-gradient-to-b from-[#140B10] to-[#0A070D] p-8 md:p-10 relative overflow-hidden shadow-2xl shadow-[#8B1A2B]/10">
             {/* Top highlight glow */}
-            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-amber-500 via-orange-400 to-amber-600" />
+            <div className="absolute top-0 right-0 left-0 h-1 bg-gradient-to-r from-[#8B1A2B] via-[#B8334F] to-[#8B1A2B]" />
 
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-xs font-mono tracking-widest text-amber-400 uppercase font-semibold">
+                <span className="text-xs font-mono tracking-widest text-[#E06D85] uppercase font-semibold">
                   MINDMESH PRO
                 </span>
-                <span className="text-[11px] font-mono tracking-wider px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 font-medium">
+                <span className="text-[11px] font-mono tracking-wider px-2.5 py-1 rounded-full bg-[#8B1A2B]/20 border border-[#B8334F]/35 text-[#F294A8] font-medium">
                   7-DAY FREE TRIAL
                 </span>
               </div>
@@ -183,12 +180,12 @@ export default function SubscriptionPricingSection() {
                   "Priority multi-modal synthesis pipeline",
                 ].map((feature, idx) => (
                   <div key={idx} className="flex items-start gap-3">
-                    <div className="w-4 h-4 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0 mt-0.5 border border-amber-500/40">
-                      <Check className="w-2.5 h-2.5 text-amber-400" />
+                    <div className="w-4 h-4 rounded-full bg-[#8B1A2B]/20 flex items-center justify-center shrink-0 mt-0.5 border border-[#B8334F]/40">
+                      <Check className="w-2.5 h-2.5 text-[#E06D85]" />
                     </div>
                     <span
                       className={`text-xs md:text-sm font-sans leading-snug ${
-                        idx === 0 ? "text-amber-300/90 font-medium" : "text-white/85"
+                        idx === 0 ? "text-[#F294A8] font-medium" : "text-white/85"
                       }`}
                     >
                       {feature}
@@ -201,7 +198,7 @@ export default function SubscriptionPricingSection() {
             <div className="mt-8 pt-6 border-t border-white/10">
               <a
                 href="https://github.com/MdTowfikomer/MindMesh-AI/releases/latest/download/app-release.apk"
-                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 text-black text-xs font-mono font-semibold tracking-wider hover:bg-amber-400 transition-all shadow-lg shadow-amber-500/20"
+                className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#8B1A2B] text-white text-xs font-mono font-semibold tracking-wider hover:bg-[#A32238] transition-all shadow-lg shadow-[#8B1A2B]/30 border border-[#B8334F]/30"
               >
                 <span>START 7-DAY FREE TRIAL</span>
                 <ArrowRight className="w-3.5 h-3.5" />

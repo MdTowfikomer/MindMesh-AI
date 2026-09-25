@@ -229,7 +229,7 @@ export default function FeedScreen() {
               openPaywall();
             }}
           >
-            <Crown size={13} color="#F59E0B" />
+            <Crown size={13} color="#B8334F" />
             <Text style={styles.proHeaderBtnText}>Pro</Text>
           </TouchableOpacity>
 
@@ -470,8 +470,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(245, 158, 11, 0.1)',
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    backgroundColor: 'rgba(139, 26, 43, 0.14)',
+    borderColor: 'rgba(184, 51, 79, 0.4)',
     borderWidth: 1,
     paddingHorizontal: 11,
     paddingVertical: 7,
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   proHeaderBtnText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#F59E0B',
+    color: '#E06D85',
   },
   graphHeaderBtn: {
     flexDirection: 'row',

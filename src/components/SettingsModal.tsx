@@ -198,7 +198,7 @@ export const SettingsModal: React.FC = () => {
             <View style={styles.subscriptionCard}>
               <View style={styles.subscriptionTopRow}>
                 <View style={styles.subscriptionIconBadge}>
-                  <Crown size={18} color="#F59E0B" />
+                  <Crown size={18} color="#B8334F" />
                 </View>
                 <View style={styles.subscriptionTierBadge}>
                   <Text style={styles.subscriptionTierBadgeText}>
@@ -228,7 +228,7 @@ export const SettingsModal: React.FC = () => {
                 <Text style={styles.subscriptionActionText}>
                   {userStats?.isPro ? 'Manage Subscription' : 'View Plans & 7-Day Free Trial'}
                 </Text>
-                <ChevronRight size={14} color="#0A0B0E" />
+                <ChevronRight size={14} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
 
@@ -779,11 +779,11 @@ const styles = StyleSheet.create({
     color: '#CBD5E1',
   },
   subscriptionCard: {
-    backgroundColor: '#14161D',
+    backgroundColor: '#101118',
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.25)',
+    borderColor: 'rgba(184, 51, 79, 0.35)',
     gap: 10,
   },
   subscriptionTopRow: {
@@ -795,24 +795,24 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    backgroundColor: 'rgba(139, 26, 43, 0.15)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.25)',
+    borderColor: 'rgba(184, 51, 79, 0.4)',
   },
   subscriptionTierBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(139, 26, 43, 0.18)',
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderColor: 'rgba(184, 51, 79, 0.35)',
   },
   subscriptionTierBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#F59E0B',
+    color: '#E06D85',
     letterSpacing: 0.5,
   },
   subscriptionTitle: {
@@ -829,16 +829,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#8B1A2B',
     borderRadius: 10,
     paddingVertical: 11,
     paddingHorizontal: 16,
     gap: 6,
     marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(184, 51, 79, 0.5)',
   },
   subscriptionActionText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#0A0B0E',
+    color: '#FFFFFF',
   },
 });
