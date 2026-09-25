@@ -19,7 +19,9 @@ export class RevenueCatService {
     try {
       if ((Platform.OS === 'ios' || Platform.OS === 'android') && !this.isExpoGo()) {
         const Purchases = require('react-native-purchases').default;
-        const apiKey = Platform.OS === 'ios' ? 'appl_mock_revenuecat_ios_key' : 'goog_mock_revenuecat_android_key';
+        const apiKey = Platform.OS === 'ios'
+          ? (process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY || process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || 'appl_mock_revenuecat_ios_key')
+          : (process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY || process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || 'goog_mock_revenuecat_android_key');
         await Purchases.configure({ apiKey });
         console.log('[RevenueCat] Native SDK Initialized successfully (Dev Build)');
       } else {
