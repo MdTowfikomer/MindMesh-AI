@@ -390,6 +390,24 @@
 /* ---------- Mobile ---------- */
 
 @media (max-width: 640px) {
+  .ok-h26-hero-media {
+    margin: 0 8px 12px 8px;
+    border-radius: 16px;
+  }
+
+  .ok-h26-hero-media__gradient {
+    background: radial-gradient(
+      ellipse at 50% 35%,
+      rgba(0, 0, 0, 0.15) 0%,
+      rgba(2, 2, 4, 0.55) 60%,
+      #020204 100%
+    );
+  }
+
+  .ok-h26-hero-inner {
+    padding: 24px 16px;
+  }
+
   .ok-h26-hero-content {
     max-width: 100%;
     margin: 0 auto;

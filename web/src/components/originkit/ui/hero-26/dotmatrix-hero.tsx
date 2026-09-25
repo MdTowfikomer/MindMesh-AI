@@ -335,6 +335,96 @@ function buildPaletteUniforms(colorList: string[]) {
     return { rgb, alpha };
 }
 
+/**
+ * High-performance 2D Canvas Fallback
+ * Guarantees animated dot matrix is visible on 100% of devices:
+ * iOS Safari, Android WebViews (WhatsApp, Instagram), battery saver,
+ * or when WebGL2 is restricted or unavailable.
+ */
+function initCanvas2DFallback(
+    container: HTMLDivElement,
+    colors: string[],
+    speed: number,
+    cellSize: number
+) {
+    const canvas = document.createElement("canvas");
+    canvas.style.position = "absolute";
+    canvas.style.inset = "0";
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
+    canvas.style.display = "block";
+    canvas.style.pointerEvents = "none";
+    container.appendChild(canvas);
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return () => {};
+
+    let animId: number | null = null;
+    let width = 0;
+    let height = 0;
+    let dpr = 1;
+
+    const resize = () => {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = container.clientWidth || window.innerWidth;
+        height = container.clientHeight || window.innerHeight;
+        canvas.width = Math.max(width, 100) * dpr;
+        canvas.height = Math.max(height, 100) * dpr;
+    };
+    resize();
+
+    window.addEventListener("resize", resize);
+
+    let time = 0;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const baseStep = isMobile ? Math.max(cellSize, 14) : Math.max(cellSize, 11);
+
+    const render = () => {
+        time += 0.014 * (speed / 3);
+        const step = baseStep * dpr;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cols = Math.ceil(canvas.width / step) + 1;
+        const rows = Math.ceil(canvas.height / step) + 1;
+
+        for (let r = 0; r < rows; r++) {
+            const py = r * step;
+            for (let c = 0; c < cols; c++) {
+                const px = c * step;
+
+                const u = px / canvas.width;
+                const v = py / canvas.height;
+
+                // Flowing multi-frequency wave formula
+                const w1 = Math.sin(u * 4.5 + time * 1.5) * 0.45;
+                const w2 = Math.cos(v * 3.8 - time * 1.1) * 0.35;
+                const w3 = Math.sin((u + v) * 3.2 + time * 0.8) * 0.2;
+                const val = (w1 + w2 + w3 + 1.0) * 0.5;
+
+                const radius = (1.2 + val * 3.4) * dpr;
+                const alpha = Math.min(1, Math.max(0.08, Math.pow(val, 2.2) * 0.95));
+
+                ctx.beginPath();
+                ctx.arc(px, py, radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(180, 180, 230, ${alpha})`;
+                ctx.fill();
+            }
+        }
+
+        animId = requestAnimationFrame(render);
+    };
+
+    render();
+
+    return () => {
+        window.removeEventListener("resize", resize);
+        if (animId) cancelAnimationFrame(animId);
+        if (canvas.parentElement === container) {
+            container.removeChild(canvas);
+        }
+    };
+}
+
 interface DottedBackgroundProps {
     frequency?: number;
     speed?: number;
@@ -431,29 +521,67 @@ function DottedBackground({
     useEffect(() => {
         let resizeHandler: (() => void) | null = null;
         let resizeObserver: ResizeObserver | null = null;
+        let cleanupFallback: (() => void) | null = null;
         const container = containerRef.current;
         if (!container) return;
 
-        const renderer = new Renderer({
-            dpr: Math.min(window.devicePixelRatio || 1, 2),
-            alpha: true,
-            premultipliedAlpha: false,
-        });
-        const gl = renderer.gl;
-        container.appendChild(gl.canvas);
-        rendererRef.current = renderer;
-        glRef.current = gl;
+        // Detect if WebGL2 is genuinely available
+        let hasWebGL2 = false;
+        try {
+            const probeCanvas = document.createElement("canvas");
+            hasWebGL2 = !!(window.WebGL2RenderingContext && probeCanvas.getContext("webgl2"));
+        } catch {}
+
+        if (!hasWebGL2) {
+            cleanupFallback = initCanvas2DFallback(
+                container,
+                paletteColors,
+                speed,
+                cellSize
+            );
+            return () => {
+                if (cleanupFallback) cleanupFallback();
+            };
+        }
+
+        let renderer: any = null;
+        let gl: any = null;
+        try {
+            renderer = new Renderer({
+                dpr: Math.min(window.devicePixelRatio || 1, 2),
+                alpha: true,
+                premultipliedAlpha: false,
+                webgl: 2,
+            });
+            gl = renderer?.gl;
+            if (!gl || !renderer.isWebgl2) throw new Error("WebGL2 not available");
+            container.appendChild(gl.canvas);
+            rendererRef.current = renderer;
+            glRef.current = gl;
+        } catch (err) {
+            console.warn("[DotmatrixHero] WebGL2 init failed, using Canvas 2D fallback:", err);
+            cleanupFallback = initCanvas2DFallback(
+                container,
+                paletteColors,
+                speed,
+                cellSize
+            );
+            return () => {
+                if (cleanupFallback) cleanupFallback();
+            };
+        }
 
         const camera = new Camera(gl, { near: 0.1, far: 100 });
         camera.position.set(0, 0, 3);
         cameraRef.current = camera;
 
         const doResize = () => {
+            if (!container || !renderer || !gl) return;
             const width = container.clientWidth || window.innerWidth;
             const height = container.clientHeight || window.innerHeight;
             renderer.dpr = Math.min(window.devicePixelRatio || 1, 2);
             renderer.setSize(width, height);
-            camera.perspective({ aspect: gl.canvas.width / gl.canvas.height });
+            camera.perspective({ aspect: gl.canvas.width / Math.max(gl.canvas.height, 1) });
             if (renderTargetRef.current && renderTargetRef.current.setSize) {
                 renderTargetRef.current.setSize(
                     gl.canvas.width,
@@ -465,6 +593,10 @@ function DottedBackground({
                     gl.canvas.width,
                     gl.canvas.height,
                 ];
+            }
+            if (dotProgramRef.current) {
+                dotProgramRef.current.uniforms.uCellSize.value =
+                    mapCellSizeUiToShader(cellSize) * Math.min(window.devicePixelRatio || 1, 2);
             }
         };
 
@@ -521,7 +653,7 @@ function DottedBackground({
         });
         perlinMeshRef.current = perlinMesh;
 
-        const renderTarget = new OglRenderTarget(gl);
+        const renderTarget = new OglRenderTarget(gl, { depth: false, stencil: false });
         renderTargetRef.current = renderTarget;
 
         const dummyGlyphTexture = new Texture(gl, {
@@ -541,7 +673,7 @@ function DottedBackground({
                 uPaletteCount: { value: effPaletteCount },
                 uPalette: { value: palette.rgb },
                 uPaletteA: { value: palette.alpha },
-                uCellSize: { value: mapCellSizeUiToShader(cellSize) },
+                uCellSize: { value: mapCellSizeUiToShader(cellSize) * Math.min(window.devicePixelRatio || 1, 2) },
                 uGamma: { value: mapGammaUiToShader(gamma) },
                 uPaletteBias: { value: mapPaletteBiasUiToShader(paletteBias) },
                 uUseGlyphAtlas: { value: useGlyphAtlasFlag ? 1 : 0 },
@@ -904,7 +1036,7 @@ export function DotmatrixHero({
   joinHref = "https://github.com/MdTowfikomer/MindMesh-AI/releases",
   brandName = "MindMesh AI",
   logoSrc = "/mindmesh-logo.png",
-  paletteColors = ["#04040a", "#121222", "#2e2e48", "#9a9ac2"],
+  paletteColors = ["#080814", "#1c1c38", "#404072", "#b8b8e6"],
 }: DotmatrixHeroProps = {}) {
   return (
     <section className="ok-h26-hero">
@@ -956,9 +1088,9 @@ export function DotmatrixHero({
             colors={paletteColors}
             frequency={1.5}
             speed={2}
-            cellSize={10}
-            gamma={3}
-            paletteBias={8}
+            cellSize={12}
+            gamma={2.4}
+            paletteBias={6}
           />
         </div>
         <div className="ok-h26-hero-media__gradient" />
