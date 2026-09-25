@@ -17,6 +17,13 @@ const MymindStream = dynamic(
   }
 );
 
+const SubscriptionPricingSection = dynamic(
+  () => import("@/components/pricing/SubscriptionPricingSection"),
+  {
+    loading: () => <div className="min-h-[500px] w-full bg-[#020204]" />,
+  }
+);
+
 const AppDownloadSection = dynamic(
   () => import("@/components/download/AppDownloadSection"),
   {
@@ -41,7 +48,10 @@ export default function Home() {
       {/* 3. Mymind-Style Visual Memory Stream: Search, Filters & Cards */}
       <MymindStream />
 
-      {/* 4. App Download & Specs Section + Minimalist Footer */}
+      {/* 4. Transparent Membership & RevenueCat Pricing Grid */}
+      <SubscriptionPricingSection />
+
+      {/* 5. App Download & Specs Section + Minimalist Footer */}
       <AppDownloadSection />
     </main>
   );

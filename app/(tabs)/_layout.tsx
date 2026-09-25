@@ -12,6 +12,7 @@ import { useMemoryStore } from '../../src/stores/memoryStore';
 import { MemoryDetailModal } from '../../src/components/MemoryDetailModal';
 import { FullScreenImageViewerModal } from '../../src/components/FullScreenImageViewerModal';
 import { KnowledgeGraphModal } from '../../src/components/KnowledgeGraphModal';
+import { PaywallStory } from '../../src/components/PaywallStory';
 import { CyberTheme } from '../../src/theme/cyberLuxury';
 
 LogBox.ignoreLogs(['Due to changes in Androids permission requirements']);
@@ -170,6 +171,7 @@ export default function TabLayout() {
       <MemoryDetailModal />
       <FullScreenImageViewerModal />
       <KnowledgeGraphModal />
+      <PaywallStory />
     </>
   );
 }

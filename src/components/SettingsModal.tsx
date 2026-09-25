@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ChevronDown,
+  ChevronRight,
   Key,
   Cpu,
   Eye,
@@ -27,6 +28,7 @@ import {
   Sparkles,
   Share2,
   FileText,
+  Crown,
 } from './Icons';
 import { useMemoryStore } from '../stores/memoryStore';
 import { ByokService, GEMINI_MODEL_PRESETS, BYOKConfig } from '../services/byokService';
@@ -41,6 +43,8 @@ export const SettingsModal: React.FC = () => {
     setByokConfig,
     showToast,
     openKnowledgeGraph,
+    openPaywall,
+    userStats,
   } = useMemoryStore();
 
   const [apiKey, setApiKey] = useState('');
@@ -190,6 +194,44 @@ export const SettingsModal: React.FC = () => {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Membership & Subscription Section */}
+            <View style={styles.subscriptionCard}>
+              <View style={styles.subscriptionTopRow}>
+                <View style={styles.subscriptionIconBadge}>
+                  <Crown size={18} color="#F59E0B" />
+                </View>
+                <View style={styles.subscriptionTierBadge}>
+                  <Text style={styles.subscriptionTierBadgeText}>
+                    {userStats?.isPro ? 'PRO ACTIVE' : 'FREE TIER'}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.subscriptionTitle}>
+                {userStats?.isPro ? 'MindMesh Pro Membership' : 'MindMesh Pro Membership'}
+              </Text>
+              <Text style={styles.subscriptionSub}>
+                {userStats?.isPro
+                  ? 'Unlimited Serendipity convergence, automated PRD build plans, and continuous vault sync.'
+                  : 'Unlock unlimited cognitive synthesis, Obsidian vault export, and RevenueCat automated build plans.'}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.subscriptionActionBtn}
+                onPress={() => {
+                  CyberTheme.haptics.medium();
+                  closeSettingsModal();
+                  openPaywall();
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.subscriptionActionText}>
+                  {userStats?.isPro ? 'Manage Subscription' : 'View Plans & 7-Day Free Trial'}
+                </Text>
+                <ChevronRight size={14} color="#0A0B0E" />
+              </TouchableOpacity>
+            </View>
+
             {/* BYOK Hero Card */}
             <View style={styles.heroCard}>
               <View style={styles.heroIconBadge}>
@@ -735,5 +777,68 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: '#CBD5E1',
+  },
+  subscriptionCard: {
+    backgroundColor: '#14161D',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+    gap: 10,
+  },
+  subscriptionTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  subscriptionIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+  },
+  subscriptionTierBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+  },
+  subscriptionTierBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#F59E0B',
+    letterSpacing: 0.5,
+  },
+  subscriptionTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#F8FAFC',
+  },
+  subscriptionSub: {
+    fontSize: 12,
+    color: '#94A3B8',
+    lineHeight: 18,
+  },
+  subscriptionActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F59E0B',
+    borderRadius: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 16,
+    gap: 6,
+    marginTop: 4,
+  },
+  subscriptionActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#0A0B0E',
   },
 });

@@ -1063,6 +1063,9 @@ export function DotmatrixHero({
           <a className="ok-h26-nav-pill" href={docsHref}>
             {docsLabel}
           </a>
+          <a className="ok-h26-nav-pill" href="#pricing">
+            Pricing
+          </a>
           <a className="ok-h26-nav-pill ok-h26-nav-pill--cta" href={joinHref} target="_blank" rel="noopener noreferrer">
             <span className="ok-h26-nav-pill__label">{joinLabel}</span>
             <span className="ok-h26-nav-pill__icon">

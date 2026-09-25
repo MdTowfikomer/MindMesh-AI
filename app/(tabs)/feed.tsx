@@ -29,6 +29,7 @@ import {
   Share2,
   Play,
   Mic,
+  Crown,
 } from '../../src/components/Icons';
 import { SettingsModal } from '../../src/components/SettingsModal';
 import { ByokPromptModal } from '../../src/components/ByokPromptModal';
@@ -69,6 +70,7 @@ export default function FeedScreen() {
     toastType,
     showToast,
     openKnowledgeGraph,
+    openPaywall,
   } = useMemoryStore();
 
   const [typeFilter, setTypeFilter] = useState<'all' | 'image' | 'text' | 'bookmark' | 'video' | 'voice'>('all');
@@ -219,6 +221,18 @@ export default function FeedScreen() {
         <Text style={styles.screenTitle}>Memory Feed</Text>
 
         <View style={styles.headerRightActions}>
+          <TouchableOpacity
+            style={styles.proHeaderBtn}
+            activeOpacity={0.75}
+            onPress={() => {
+              CyberTheme.haptics.medium();
+              openPaywall();
+            }}
+          >
+            <Crown size={13} color="#F59E0B" />
+            <Text style={styles.proHeaderBtnText}>Pro</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.graphHeaderBtn}
             activeOpacity={0.75}
@@ -451,6 +465,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  proHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderWidth: 1,
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 18,
+  },
+  proHeaderBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#F59E0B',
   },
   graphHeaderBtn: {
     flexDirection: 'row',
